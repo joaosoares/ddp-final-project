@@ -1,0 +1,10 @@
+
+
+OPTION psf_version = 2.1;
+
+BEGIN DRIVER Montgomery_Interface
+	OPTION supported_peripherals = (Montgomery_Interface);
+	OPTION copyfiles = all;
+	OPTION VERSION = 1.0;
+	OPTION NAME = Montgomery_Interface;
+END DRIVER

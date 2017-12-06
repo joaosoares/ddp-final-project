@@ -1,0 +1,96 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "xil_printf.h"
+#include "xil_cache.h"
+
+#include "platform/platform.h"
+#include "platform/performance_counters.h"
+
+#include "interface.h"
+#include "sw.h"
+#include "hw.h"
+
+extern uint32_t M[32],
+                N[32],       N_prime[32],
+                e[32],
+                e_len,
+                p[16],       q[16],
+                d_p[16],     d_q[16],
+                d_p_len[16], d_q_len[16],
+                x_p[32],     x_q[32],
+                R2p[16],     R2q[16],
+                R_1024[32],  R2_1024[32],
+                One[32];
+
+
+int main()
+{
+    int i;
+    init_platform();
+    init_performance_counters(1);
+    interface_init();
+
+    xil_printf("Startup..\n\r");
+
+    START_TIMING
+	test_dma_transfer();
+    STOP_TIMING
+
+    /////// Test the port-based comms
+
+    // Create and initialize src array
+    unsigned int src[DMA_TRANSFER_NUMBER_OF_WORDS];
+
+    for (i=0; i< DMA_TRANSFER_NUMBER_OF_WORDS; i++)
+        src[i]=i;
+
+
+    //// --- Perform the send operation
+
+    // Start by writing SEND_CMD to port1 (command port)
+    xil_printf("CMD = %x\n\r",0x0);
+    my_montgomery_port[0] = 0x0;
+
+    // Transfer the src array to BRAM
+    bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
+
+    // Wait for done of SEND_CMD is done
+    // by waiting for port2 (acknowledgement port)
+    port2_wait_for_done();
+
+    //// --- Print BRAM contents
+
+    // For checking if send is successful
+    print_bram_contents();
+
+
+    //// --- Perform the compute operation
+
+    // Start by writing COMPUTE_CMD to port1 (command port)
+    xil_printf("PORT1=%x\n\r",0x1);
+    my_montgomery_port[0] = 0x1;
+
+    // Wait for done of COMPUTE_CMD is done
+	// by waiting for port2 (acknowledgement port)
+    port2_wait_for_done();
+
+
+    //// --- Perform the read operation
+
+    // Start by writing READ_CMD to port1 (command port)
+    xil_printf("PORT1=%x\n\r",0x2);
+    my_montgomery_port[0] = 0x2;
+
+    // Wait for done of COMPUTE_CMD is done
+    port2_wait_for_done(); //Wait until Port2=1
+
+
+    //// --- Print BRAM contents
+
+    // For receiving the read output of the computation
+    print_bram_contents();
+
+    cleanup_platform();
+    return 0;
+}

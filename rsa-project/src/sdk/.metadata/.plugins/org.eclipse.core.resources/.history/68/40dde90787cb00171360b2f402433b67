@@ -1,0 +1,12 @@
+#include "hw.h"
+//#include "global.h"
+#include "interface.h"
+
+extern uint32_t M[32],      N[32],
+         e,          e_len,
+         p[16],      q[16],
+         d_p[16],    d_q[16],
+         x_p[32],    x_q[32],
+         R2p[16],    R2q[16],
+         R_1024[32], R2_1024[32],
+         One[32];

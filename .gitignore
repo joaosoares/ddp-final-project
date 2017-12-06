@@ -1,0 +1,11 @@
+*.backup*
+*.jou
+*.log
+*.str
+.DS_Store
+rsa-project/rsa_project/rsa_project.runs/*
+rsa-project/rsa_project/rsa_project.hw/*
+rsa-project/rsa_project/rsa_project.srcs/*
+rsa-project/rsa_project/rsa_project.sdk
+rsa-project/rsa_project/rsa_project.ip_user_files
+rsa-project/rsa_project/rsa_project.sim
