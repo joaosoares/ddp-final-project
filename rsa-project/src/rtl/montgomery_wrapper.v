@@ -61,19 +61,23 @@ module montgomery_wrapper
     );
 
     localparam STATE_BITS           = 4;    
-    localparam STATE_COMPUTE        = 3'o1;
-    localparam STATE_WRITE_DATA_OUT = 3'o2;
-    localparam STATE_WRITE_PORT2    = 3'o3;
-    localparam STATE_READ_DATA      = 3'o4;
-    localparam STATE_WRITE_DATA     = 3'o5;
-    localparam STATE_WAIT_FOR_CMD   = 3'o7;    
+    localparam STATE_WAIT_FOR_CMD   = 4'o1;
+    localparam STATE_READ_A1_A2     = 4'o2;
+    localparam STATE_READ_B1_B2     = 4'o3;
+    localparam STATE_READ_M1_M2     = 4'o4;
+    localparam STATE_WRITE_RESULTS  = 4'o5;
+    localparam STATE_WRITE_PORT2    = 4'o6;
+    localparam STATE_MULTIPLY_START = 4'o7;
+    localparam STATE_MULTIPLY_WAIT  = 4'o8;
 
     reg [STATE_BITS-1:0] r_state;
     reg [STATE_BITS-1:0] next_state;
     
-    localparam CMD_READ             = 32'h0;
-    localparam CMD_COMPUTE          = 32'h1;    
-    localparam CMD_WRITE            = 32'h2;
+    localparam CMD_READ_A1_A2       = 32'h0;
+    localparam CMD_READ_B1_B2       = 32'h1;
+    localparam CMD_READ_M1_M2       = 32'h2;
+    localparam CMD_MULTIPLY         = 32'h3;    
+    localparam CMD_WRITE            = 32'h4;
 
     ////////////// - State Machine
 
@@ -89,12 +93,16 @@ module montgomery_wrapper
                         if (port1_valid==1'b1) begin
                             //Decode the command received on Port1
                             case (port1_din)
-                                CMD_READ:
-                                    next_state <= STATE_READ_DATA;
-                                CMD_COMPUTE:                            
-                                    next_state <= STATE_COMPUTE;                                
-                                CMD_WRITE: 
-                                    next_state <= STATE_WRITE_DATA;
+                                CMD_READ_A1_A2:
+                                    next_state <= STATE_READ_A1_A2;
+                                CMD_READ_B1_B2:
+                                    next_state <= STATE_READ_B1_B2;
+                                CMD_READ_M1_M2:
+                                    next_state <= STATE_READ_M1_M2;
+                                CMD_MULTIPLY:                            
+                                    next_state <= STATE_MULTIPLY_START;                                
+                                CMD_WRITE:
+                                    next_state <= STATE_WRITE_RESULTS;
                                 default:
                                     next_state <= r_state;
                             endcase;
@@ -102,15 +110,23 @@ module montgomery_wrapper
                             next_state <= r_state;
                     end
                 
-                STATE_READ_DATA:
-                    //Read the bram_din and store in r_tmp
+                STATE_READ_A1_A2:
+                    //Read the bram_din and store in a1_tmp and a2_temp
                     next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
-                STATE_COMPUTE: 
-                    //Perform a computation on r_tmp
-                    next_state <= STATE_WRITE_PORT2;
+                STATE_READ_B1_B2:
+                    //Read the bram_din and store in b1_temp and b2_temp
+                    next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
-                STATE_WRITE_DATA:
+                STATE_READ_M1_M2:
+                    //Read the bram_din and store in m1_temp and m2_temp
+                    next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
+                
+                STATE_MULTIPLY_START: 
+                    //Perform a computation on r_tmp
+                    next_state <= STATE_MULTIPLY_WAIT;
+                
+                STATE_WRITE_RESULTS:
                     //Write r_tmp to bram_dout
                     next_state <= (bram_dout_read==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
@@ -134,27 +150,80 @@ module montgomery_wrapper
 
     ////////////// - Computation
 
-    reg [511:0] core1_data;
-    reg [511:0] core2_data;
+    reg [511:0] a1_data;
+    reg [511:0] a2_data;
+
+    reg [511:0] b1_data;
+    reg [511:0] b2_data;
+
+    reg [511:0] m1_data;
+    reg [511:0] m2_data;
 
     always @(posedge(clk))
         if (resetn==1'b0)
         begin
-            core1_data <= 512'b0;
-            core2_data <= 512'b0;
+            a1_data <= 512'b0;
+            a2_data <= 512'b0;
+            b1_data <= 512'b0;
+            b2_data <= 512'b0;
+            m1_data <= 512'b0;
+            m2_data <= 512'b0;
         end
         else
         begin
             case (r_state)
-                STATE_READ_DATA:
+                STATE_READ_A1_A2:
                     if ((bram_din_valid==1'b1)) begin
-                        core1_data <= bram_din1;
-                        core2_data <= bram_din2;
+                        a1_data <= bram_din1;
+                        a2_data <= bram_din2;
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
+
                     end else begin
-                        core1_data <= core1_data; 
-                        core2_data <= core2_data; 
+                        a1_data <= a1_data; 
+                        a2_data <= a2_data; 
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
                     end
-                STATE_COMPUTE:
+                STATE_READ_B1_B2:
+                    if ((bram_din_valid==1'b1)) begin
+                        a1_data <= a1_data;
+                        a2_data <= a2_data;
+                        b1_data <= bram_din1;
+                        b2_data <= bram_din2;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
+
+                    end else begin
+                        a1_data <= a1_data; 
+                        a2_data <= a2_data; 
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
+                    end
+                STATE_READ_M1_M2:
+                    if ((bram_din_valid==1'b1)) begin
+                        a1_data <= a1_data;
+                        a2_data <= a2_data;
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= bram_din1;
+                        m2_data <= bram_din2;
+
+                    end else begin
+                        a1_data <= a1_data; 
+                        a2_data <= a2_data; 
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
+                    end
+                STATE_MULTIPLY_START:
                     begin
                         // XORs the most significant word in the core_data
                         core1_data <= {core1_data[511:480]^32'hDEADBEEF,{core1_data[479:0]}};

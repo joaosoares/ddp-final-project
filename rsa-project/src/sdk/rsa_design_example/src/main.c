@@ -97,7 +97,6 @@ int main()
 
 
     //// --- Print BRAM contents
-
     // For checking if send is successful
     print_bram_contents();
 

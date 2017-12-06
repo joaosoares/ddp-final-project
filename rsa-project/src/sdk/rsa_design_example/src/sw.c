@@ -28,12 +28,12 @@ void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n, uint32_t
 
 	// Calculate x_tilde = MontMul(x, R^2 mod m)
 	//   R2_1024 is defined in global.h
-	// montgomery_multiply(msg, R2_1024, n, n_prime, x_tilde, SIZE);
+	montgomery_multiply(msg, R2_1024, n, n_prime, x_tilde, SIZE);
 
 	// Copy R to A
 	//   R_1024 is defined in global.h
-	// for(i = 0; i < 32; i++)
-	//   A[i] = R_1024[i];
+	for(i = 0; i < 32; i++)
+	  A[i] = R_1024[i];
 
 	while(exp_len>=0)
 	{
@@ -44,18 +44,18 @@ void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n, uint32_t
 		xil_printf("Bit[%d] of exponent is: %d\n\r", exp_len, bit);
 
 		// Calculate A = MontMul(A, A)
-		// montgomery_multiply(A, A, n, n_prime, A, SIZE);
+		montgomery_multiply(A, A, n, n_prime, A, SIZE);
 
 		if(bit)
 		{
 			// Calculate A = MontMul(A, x_tilde)
-			// montgomery_multiply(A, x_tilde, n, n_prime, A, SIZE);
+			montgomery_multiply(A, x_tilde, n, n_prime, A, SIZE);
 		}
 	}
 
 	// Calculate A = MontMul(A, 1)
 	//   One is defined in global.h
-	// montgomery_multiply(A, One, n, n_prime, A, SIZE);
+	montgomery_multiply(A, One, n, n_prime, A, SIZE);
 }
 
 // Calculates res = (a * b / R) mod N where R = 2^1024
