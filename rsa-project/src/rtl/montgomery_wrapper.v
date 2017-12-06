@@ -240,6 +240,28 @@ module montgomery_wrapper
     assign bram_dout1       = core1_data;   
     assign bram_dout2       = core2_data; 
 
+	montgomery mont1(
+		clk,
+		resetn,
+		mult_start,
+		a1_data,
+		b1_data,
+		m1_data,
+        res1_data,
+		mont1_done
+	);
+
+	montgomery mont2(
+		clk,
+		resetn,
+		mult_start,
+		a2_data,
+		b2_data,
+		m2_data,
+        res2_data,
+		mont2_done
+	);
+
     ////////////// - Valid signals for notifying that the computation is done
 
     // Computation is done for Core 1
