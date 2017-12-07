@@ -61,14 +61,15 @@ module montgomery_wrapper
     );
 
     localparam STATE_BITS           = 4;    
-    localparam STATE_WAIT_FOR_CMD   = 4'o1;
-    localparam STATE_READ_A1_A2     = 4'o2;
-    localparam STATE_READ_B1_B2     = 4'o3;
-    localparam STATE_READ_M1_M2     = 4'o4;
-    localparam STATE_WRITE_RESULTS  = 4'o5;
-    localparam STATE_WRITE_PORT2    = 4'o6;
-    localparam STATE_MULTIPLY_START = 4'o7;
-    localparam STATE_MULTIPLY_WAIT  = 4'o8;
+    localparam STATE_WAIT_FOR_CMD   = 4'd1;
+    localparam STATE_READ_A1_A2     = 4'd2;
+    localparam STATE_READ_B1_B2     = 4'd3;
+    localparam STATE_READ_M1_M2     = 4'd4;
+    localparam STATE_WRITE_RESULTS  = 4'd5;
+    localparam STATE_WRITE_PORT2    = 4'd6;
+    localparam STATE_MULTIPLY_START = 4'd7;
+    localparam STATE_MULTIPLY_WAIT  = 4'd8;
+    localparam STATE_MULTIPLY_DONE  = 4'd9;
 
     reg [STATE_BITS-1:0] r_state;
     reg [STATE_BITS-1:0] next_state;
@@ -159,6 +160,12 @@ module montgomery_wrapper
     reg [511:0] m1_data;
     reg [511:0] m2_data;
 
+    wire [511:0] res1_data;
+    wire [511:0] res2_data;
+
+    reg [511:0] core1_data;
+    reg [511:0] core2_data;
+
     always @(posedge(clk))
         if (resetn==1'b0)
         begin
@@ -172,63 +179,61 @@ module montgomery_wrapper
         else
         begin
             case (r_state)
-                STATE_READ_A1_A2:
+                STATE_READ_A1_A2: begin
                     if ((bram_din_valid==1'b1)) begin
                         a1_data <= bram_din1;
                         a2_data <= bram_din2;
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
-                        m1_data <= m1_data;
-                        m2_data <= m2_data;
-
                     end else begin
                         a1_data <= a1_data; 
                         a2_data <= a2_data; 
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
-                        m1_data <= m1_data;
-                        m2_data <= m2_data;
                     end
-                STATE_READ_B1_B2:
+                    b1_data <= b1_data;
+                    b2_data <= b2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                end
+                STATE_READ_B1_B2: begin
                     if ((bram_din_valid==1'b1)) begin
-                        a1_data <= a1_data;
-                        a2_data <= a2_data;
                         b1_data <= bram_din1;
                         b2_data <= bram_din2;
-                        m1_data <= m1_data;
-                        m2_data <= m2_data;
-
                     end else begin
-                        a1_data <= a1_data; 
-                        a2_data <= a2_data; 
                         b1_data <= b1_data;
                         b2_data <= b2_data;
-                        m1_data <= m1_data;
-                        m2_data <= m2_data;
                     end
-                STATE_READ_M1_M2:
+                    a1_data <= a1_data; 
+                    a2_data <= a2_data; 
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                end
+                STATE_READ_M1_M2:begin
                     if ((bram_din_valid==1'b1)) begin
-                        a1_data <= a1_data;
-                        a2_data <= a2_data;
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
                         m1_data <= bram_din1;
                         m2_data <= bram_din2;
-
                     end else begin
-                        a1_data <= a1_data; 
-                        a2_data <= a2_data; 
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
                         m1_data <= m1_data;
                         m2_data <= m2_data;
                     end
-                STATE_MULTIPLY_START:
-                    begin
-                        // XORs the most significant word in the core_data
-                        core1_data <= {core1_data[511:480]^32'hDEADBEEF,{core1_data[479:0]}};
-                        core2_data <= {core2_data[511:480]^32'hCAFEBABE,{core2_data[479:0]}};
-                    end
+                    a1_data <= a1_data;
+                    a2_data <= a2_data;
+                    b1_data <= b1_data;
+                    b2_data <= b2_data;
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                end
+                STATE_MULTIPLY_DONE: begin
+                    core1_data <= res1_data;
+                    core2_data <= res2_data;
+                    a1_data <= a1_data; 
+                    a2_data <= a2_data; 
+                    b1_data <= b1_data;
+                    b2_data <= b2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                end
                 default:
                     begin
                         core1_data <= core1_data;
@@ -268,14 +273,14 @@ module montgomery_wrapper
     reg r_bram_dout1_valid;
     always @(posedge(clk))
     begin
-        r_bram_dout1_valid <= (r_state==STATE_WRITE_DATA);
+        r_bram_dout1_valid <= (r_state==STATE_WRITE_RESULTS);
     end
 
     // Computation is done for Core 2
     reg r_bram_dout2_valid;
     always @(posedge(clk))
     begin
-        r_bram_dout2_valid <= (r_state==STATE_WRITE_DATA);
+        r_bram_dout2_valid <= (r_state==STATE_WRITE_RESULTS);
     end
 
     assign bram_dout1_valid = r_bram_dout1_valid;
