@@ -90,8 +90,7 @@ module montgomery_wrapper
         else
         begin
             case (r_state)
-                STATE_WAIT_F        task_port1_write(32'h4);
-OR_CMD:
+                STATE_WAIT_FOR_CMD:
                     begin
                         if (port1_valid==1'b1) begin
                             //Decode the command received on Port1
@@ -130,7 +129,7 @@ OR_CMD:
                     next_state <= STATE_MULTIPLY_WAIT;
 
                 STATE_MULTIPLY_WAIT:
-                    if(!mont1_done && !mont2_done)
+                    if(!mont1_done || !mont2_done)
                         next_state <= STATE_MULTIPLY_WAIT;
                     else
                         next_state <= STATE_WRITE_PORT2 ;
