@@ -69,7 +69,7 @@ set_msg_config -id {Synth 8-3352}    -new_severity {ERROR}
 set_msg_config -id {Synth 8-5559}    -new_severity {ERROR}
 
 # Timing not meet -> Error
-set_msg_config -id {Timing 38-282}   -new_severity {ERROR}
+# set_msg_config -id {Timing 38-282}   -new_severity {ERROR}
 
 set_msg_config -id {BD 41-1343}      -new_severity {INFO}
 set_msg_config -id {BD_TCL-1000}     -new_severity {INFO}
