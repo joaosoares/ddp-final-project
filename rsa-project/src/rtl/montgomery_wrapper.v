@@ -80,6 +80,8 @@ module montgomery_wrapper
     localparam CMD_MULTIPLY         = 32'h3;    
     localparam CMD_WRITE            = 32'h4;
 
+
+
     ////////////// - State Machine
 
     always @(*)
@@ -126,6 +128,15 @@ module montgomery_wrapper
                 STATE_MULTIPLY_START: 
                     //Perform a computation on r_tmp
                     next_state <= STATE_MULTIPLY_WAIT;
+
+                STATE_MULTIPLY_WAIT:
+                    if(!mont1_done && !mont2_done)
+                        next_state <= STATE_MULTIPLY_WAIT;
+                    else
+                        next_state <= STATE_MULTIPLY_DONE ;
+
+                STATE_MULTIPLY_DONE:
+                    next_state <= STATE_WRITE_RESULTS;
                 
                 STATE_WRITE_RESULTS:
                     //Write r_tmp to bram_dout
@@ -166,6 +177,11 @@ module montgomery_wrapper
     reg [511:0] core1_data;
     reg [511:0] core2_data;
 
+    wire [511:0] mont1_done;
+    wire [511:0] mont2_done;
+
+    reg [511:0] mult_start;
+
     always @(posedge(clk))
         if (resetn==1'b0)
         begin
@@ -193,6 +209,7 @@ module montgomery_wrapper
                     m2_data <= m2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
+                    mult_start <= 1'b0;
                 end
                 STATE_READ_B1_B2: begin
                     if ((bram_din_valid==1'b1)) begin
@@ -208,6 +225,8 @@ module montgomery_wrapper
                     m2_data <= m2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
+                    mult_start <= 1'b0;
+                    
                 end
                 STATE_READ_M1_M2:begin
                     if ((bram_din_valid==1'b1)) begin
@@ -223,7 +242,20 @@ module montgomery_wrapper
                     b2_data <= b2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
+                    mult_start <= 1'b0;
                 end
+                STATE_MULTIPLY_START: begin
+                    core1_data <= res1_data;
+                    core2_data <= res2_data;
+                    a1_data <= a1_data; 
+                    a2_data <= a2_data; 
+                    b1_data <= b1_data;
+                    b2_data <= b2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    mult_start <= 1'b1;
+                end
+
                 STATE_MULTIPLY_DONE: begin
                     core1_data <= res1_data;
                     core2_data <= res2_data;
@@ -233,6 +265,7 @@ module montgomery_wrapper
                     b2_data <= b2_data;
                     m1_data <= m1_data;
                     m2_data <= m2_data;
+                    mult_start <= 1'b0;
                 end
                 default:
                     begin
