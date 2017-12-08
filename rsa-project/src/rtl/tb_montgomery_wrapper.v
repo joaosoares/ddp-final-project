@@ -152,15 +152,17 @@ module tb_montgomery_wrapper#
 
         // Perform CMD_READ
         task_port1_write(32'h0); 
+        //CMD_WRITE(32'h0)
 
         // Put the values to bram to be read.
         task_bram_write( 
-            512'h00000000000000000123456789abcdef000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000,
-            512'h00000000000000000fedcba987654321000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000);
+            512'hb90a354c0f31caa3048642a799b9fc45e1d94a9fa996fb609c5c6abfa2f18c5f5da597550f7b03027161d11ed66da662e9c5e9a4f2a055905f8eab903a,
+            512'he74ca44e0fc86470a8e8e89d9400caa9cc5a1577e5ee560e990b82ab85f86310a846c023333d1c98027c89e283ca58bd4755176bbc11d3db5c8a62c3f3);
         
         // Wait for completion of the read operation
         // by waiting for port2_valid to go high.
         task_port2_read(); 
+        //CMD_READ_A1_A2(32'h0);
 
         // Perform CMD_COMPUTE
         task_port1_write(32'h1); 
