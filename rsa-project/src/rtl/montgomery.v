@@ -47,10 +47,9 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 	LOOP_ADD_M_WAIT = 6,
 	LOOP_ADD_M_RESULT = 7,
 	LOOP_SHIFT = 8,
-	CHECK_SUB_COND = 9,
-	SUB_COND = 10,
-	SUB_COND_WAIT = 11,
-	DONE = 12;
+	SUB_COND = 9,
+	SUB_COND_WAIT = 10,
+	DONE = 11;
 
 	// Datapath control in signals
 	wire c0,
@@ -274,13 +273,8 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 				if (counter < WIDTH-1)
 					nextstate <= LOOP_START;
 				else
-					nextstate <= CHECK_SUB_COND;
-			end
-			CHECK_SUB_COND:
-				if (c_reg >= m_reg)
 					nextstate <= SUB_COND;
-				else
-					nextstate <= DONE;
+			end
 			SUB_COND:
 			nextstate <= SUB_COND_WAIT;
 			SUB_COND_WAIT: begin
@@ -318,7 +312,10 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 			c_reg <= adder_m_res;
 		end
 		else if (subtractor_done) begin
-			c_reg <= subtractor_res;
+			if (subtractor_res[WIDTH] == 0)
+				c_reg <= subtractor_res;
+			else
+				c_reg <= c_reg;
 		end
 		else
 			c_reg <= c_reg;

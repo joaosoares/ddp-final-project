@@ -2,6 +2,7 @@
 *.jou
 *.log
 *.str
+*.pyc
 .DS_Store
 rsa-project/vivado.*
 rsa-project/vivado_*

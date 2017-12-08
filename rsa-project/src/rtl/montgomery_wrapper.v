@@ -69,7 +69,6 @@ module montgomery_wrapper
     localparam STATE_WRITE_PORT2    = 4'd6;
     localparam STATE_MULTIPLY_START = 4'd7;
     localparam STATE_MULTIPLY_WAIT  = 4'd8;
-    localparam STATE_MULTIPLY_DONE  = 4'd9;
 
     reg [STATE_BITS-1:0] r_state;
     reg [STATE_BITS-1:0] next_state;
@@ -91,7 +90,8 @@ module montgomery_wrapper
         else
         begin
             case (r_state)
-                STATE_WAIT_FOR_CMD:
+                STATE_WAIT_F        task_port1_write(32'h4);
+OR_CMD:
                     begin
                         if (port1_valid==1'b1) begin
                             //Decode the command received on Port1
@@ -133,10 +133,7 @@ module montgomery_wrapper
                     if(!mont1_done && !mont2_done)
                         next_state <= STATE_MULTIPLY_WAIT;
                     else
-                        next_state <= STATE_MULTIPLY_DONE ;
-
-                STATE_MULTIPLY_DONE:
-                    next_state <= STATE_WRITE_RESULTS;
+                        next_state <= STATE_WRITE_PORT2 ;
                 
                 STATE_WRITE_RESULTS:
                     //Write r_tmp to bram_dout
@@ -177,10 +174,10 @@ module montgomery_wrapper
     reg [511:0] core1_data;
     reg [511:0] core2_data;
 
-    wire [511:0] mont1_done;
-    wire [511:0] mont2_done;
+    wire mont1_done;
+    wire mont2_done;
 
-    reg [511:0] mult_start;
+    reg mult_start;
 
     always @(posedge(clk))
         if (resetn==1'b0)
@@ -256,7 +253,7 @@ module montgomery_wrapper
                     mult_start <= 1'b1;
                 end
 
-                STATE_MULTIPLY_DONE: begin
+                STATE_WRITE_RESULTS: begin
                     core1_data <= res1_data;
                     core2_data <= res2_data;
                     a1_data <= a1_data; 
@@ -271,6 +268,13 @@ module montgomery_wrapper
                     begin
                         core1_data <= core1_data;
                         core2_data <= core2_data;
+                        a1_data <= a1_data; 
+                        a2_data <= a2_data; 
+                        b1_data <= b1_data;
+                        b2_data <= b2_data;
+                        m1_data <= m1_data;
+                        m2_data <= m2_data;
+                        mult_start <= 1'b0;
                     end
             endcase;
         end
