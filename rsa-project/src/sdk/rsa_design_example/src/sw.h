@@ -27,4 +27,6 @@ void mp_add(uint32_t *a, uint32_t *b, uint32_t *res, uint32_t size);
 // a, b and res are arrays of size elements
 void mp_sub(uint32_t *a, uint32_t *b, uint32_t *res, uint32_t size);
 
+void mod(uint32_t *a, uint32_t *N, uint32_t size);
+
 #endif
