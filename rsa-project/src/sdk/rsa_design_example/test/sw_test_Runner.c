@@ -33,8 +33,10 @@ extern void tearDown(void);
 extern void test_montgomery_mult_1(void);
 extern void test_MpAdd(void);
 extern void test_MpSubTest(void);
+extern void test_MpSubTestZeros(void);
 extern void test_Mod(void);
-extern void test_ModAddTest(void);
+extern void test_ModAdd(void);
+extern void test_ModSub(void);
 
 
 /*=======Suite Setup=====*/
@@ -72,8 +74,10 @@ int main(void)
   RUN_TEST(test_montgomery_mult_1, 4);
   RUN_TEST(test_MpAdd, 18);
   RUN_TEST(test_MpSubTest, 32);
-  RUN_TEST(test_Mod, 44);
-  RUN_TEST(test_ModAddTest, 53);
+  RUN_TEST(test_MpSubTestZeros, 44);
+  RUN_TEST(test_Mod, 56);
+  RUN_TEST(test_ModAdd, 66);
+  RUN_TEST(test_ModSub, 76);
 
   return suite_teardown(UnityEnd());
 }

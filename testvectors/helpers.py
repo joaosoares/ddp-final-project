@@ -138,6 +138,18 @@ def WriteConstants(number, size):
     
     # print (out)
 
+# Generates c code for uint array that is initialized with with value of first argument
+# Second argument is the name of array you wish to use. Default is 'a'
+# Third argument is size in 32-bit word of the first argument. Default is 64 which translates to 2048-bit number. 
+# Generated array always has size elements, meaning that high index elements will be zero if first argument is to small
+def print2array(a, name='a', size=32):
+    out = 'uint {}[{:d}] = {{'.format(name, size)
+    for i in range(size):
+        out += '0x{:08x}'.format(a & 0xFFFFFFFF)
+        a >>= 32
+        out += ', ' if i<(size - 1) else '};'
+    print (out)
+    
 def CreateConstants(M, p, q, N, e, d_p, d_q, x_p, x_q, Rp, Rq, R2p, R2q, R_1024, R2_1024, seed):
     target = open("./testvector.c", 'w')
     target.truncate()
