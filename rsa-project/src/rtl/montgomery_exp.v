@@ -51,9 +51,12 @@ module montgomery_exp(
     LOOP_MULT_A_BY_ONE = 15,
     DONE = 16;
 
+	// Declare state register
+	reg [3:0] state, nextstate;
 
     // Datapath control in signals
-    wire mod_done, mult_done;
+    wire mod_done, 
+        mult_done;
 
     //Datapath control out signals
     reg start_mult,
@@ -88,6 +91,14 @@ module montgomery_exp(
         mod_result,
         mod_done
     );
+    // example state machine for computation flow
+    always @(*)
+        begin
+            case(state)
+                START: begin
+                mod_done <= 1'b0;
+                mult_done <= 1'b0;
+                
 
 
     // next state logic
@@ -106,11 +117,12 @@ module montgomery_exp(
         ASSIGN_R2_START: begin
             nextstate <= ASSIGN_R2_WAIT;
         end
-        ASSIGN_R2_WAIT
+        ASSIGN_R2_WAIT: begin
             if(!mod_done)
                 nextstate <= ASSIGN_R2_WAIT;
             else
                 nextstate <= ASSIGN_A_START;
+        end
         ASSIGN_A_START: begin
             nextstate <= ASSIGN_A_WAIT;
         end
@@ -165,6 +177,8 @@ module montgomery_exp(
             nextstate <= DONE;
         endcase
     end
+
+    // datapath
 
 
 assign cur_bit = in_e[counter];
