@@ -91,6 +91,16 @@ module montgomery_exp(
         mod_result,
         mod_done
     );
+
+	// Next state update
+	always @(posedge clk)
+	begin
+		if(!resetn)
+			state <= START;
+		else
+			state <= nextstate;
+	end
+
     // example state machine for computation flow
     always @(*)
     begin
@@ -181,7 +191,15 @@ module montgomery_exp(
     end
 
     // datapath
+	always @(posedge clk)
+	begin
+        if(start) begin
 
+        end
+        else if (mod_done)
+            
+
+    end
 
 assign cur_bit = in_e[counter];
 
