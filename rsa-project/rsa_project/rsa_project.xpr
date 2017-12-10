@@ -29,7 +29,7 @@
     <Option Name="IPStaticSourceDir" Val="$PPRDIR/rsa_project.ip_user_files/ipstatic"/>
     <Option Name="EnableBDX" Val="FALSE"/>
     <Option Name="DSABoardId" Val="zybo"/>
-    <Option Name="WTXSimLaunchSim" Val="9"/>
+    <Option Name="WTXSimLaunchSim" Val="10"/>
     <Option Name="WTModelSimLaunchSim" Val="0"/>
     <Option Name="WTQuestaLaunchSim" Val="0"/>
     <Option Name="WTIesLaunchSim" Val="0"/>
@@ -68,26 +68,11 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/../src/rtl/hweval_montgomery_wrapper.v">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-        </FileInfo>
-      </File>
       <File Path="$PSRCDIR/sources_1/bd/rsa_project/rsa_project.bd">
         <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hdl/rsa_project.v"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_4/rsa_project_auto_pc_4.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_3/rsa_project_auto_pc_3.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_2/rsa_project_auto_pc_2.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_1/rsa_project_auto_pc_1.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_us_0/rsa_project_auto_us_0.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_0/rsa_project_auto_pc_0.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_rst_processing_system7_0_100M_0/rsa_project_rst_processing_system7_0_100M_0.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_xbar_0/rsa_project_xbar_0.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_processing_system7_0_axi_periph_0/rsa_project_processing_system7_0_axi_periph_0.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_processing_system7_0_0/rsa_project_processing_system7_0_0.xci"/>
@@ -96,16 +81,30 @@
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_axi_mem_intercon_0/rsa_project_axi_mem_intercon_0.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_axi_dma_0_0/rsa_project_axi_dma_0_0.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_Montgomery_Interface_0_0/rsa_project_Montgomery_Interface_0_0.xci"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hw_handoff/rsa_project.hwh"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hdl/rsa_project.v"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_rst_processing_system7_0_100M_0/rsa_project_rst_processing_system7_0_100M_0.xci"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_3/rsa_project_auto_pc_3.xci"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_us_0/rsa_project_auto_us_0.xci"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_0/rsa_project_auto_pc_0.xci"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_1/rsa_project_auto_pc_1.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hw_handoff/rsa_project_bd.tcl"/>
-        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hdl/rsa_project.hwdef"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_2/rsa_project_auto_pc_2.xci"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="ip/rsa_project_auto_pc_4/rsa_project_auto_pc_4.xci"/>
         <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="rsa_project_ooc.xdc"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hw_handoff/rsa_project.hwh"/>
+        <CompFileExtendedInfo CompFileName="rsa_project.bd" FileRelPathName="hdl/rsa_project.hwdef"/>
       </File>
       <File Path="$PSRCDIR/sources_1/imports/hdl/rsa_project_wrapper.v">
         <FileInfo>
-          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="ImportPath" Val="$PSRCDIR/sources_1/bd/rsa_project/hdl/rsa_project_wrapper.v"/>
           <Attr Name="ImportTime" Val="1512741817"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/../src/rtl/hweval_montgomery_wrapper.v">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
@@ -124,9 +123,25 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
+      <File Path="$PSRCDIR/sources_1/new/montgomery_exp.v">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/new/mod.v">
+        <FileInfo>
+          <Attr Name="AutoDisabled" Val="1"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
-        <Option Name="TopModule" Val="hweval_montgomery_wrapper"/>
+        <Option Name="TopModule" Val="rsa_project_wrapper"/>
       </Config>
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1">
@@ -206,7 +221,7 @@
       </Strategy>
       <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-1" ConstrsSet="constrs_1" Description="Default settings for Implementation." State="current" SynthRun="synth_1" IncludeInArchive="true">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7z010clg400-1" ConstrsSet="constrs_1" Description="Default settings for Implementation." State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2016"/>
         <Step Id="init_design"/>
@@ -219,6 +234,7 @@
         <Step Id="post_route_phys_opt_design"/>
         <Step Id="write_bitstream"/>
       </Strategy>
+      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
     </Run>
   </Runs>
   <MsgRule>

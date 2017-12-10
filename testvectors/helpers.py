@@ -112,7 +112,8 @@ def WriteConstants(number, size):
 
     # # Remove unwanted characters 0x....L
     # if text[-1] == "L":
-    #     text = text[2:-1]
+    #     text = text[2:-1].
+    
     # else:
     #     text = text[2:]
     
@@ -143,7 +144,7 @@ def WriteConstants(number, size):
 # Third argument is size in 32-bit word of the first argument. Default is 64 which translates to 2048-bit number. 
 # Generated array always has size elements, meaning that high index elements will be zero if first argument is to small
 def print2array(a, name='a', size=32):
-    out = 'uint {}[{:d}] = {{'.format(name, size)
+    out = 'uint32_t {}[{:d}] = {{'.format(name, size)
     for i in range(size):
         out += '0x{:08x}'.format(a & 0xFFFFFFFF)
         a >>= 32

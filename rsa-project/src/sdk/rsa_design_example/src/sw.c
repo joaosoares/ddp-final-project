@@ -27,7 +27,7 @@ void customprint(uint32_t *a, int size) {
 
 // Calculates res = (x^exp) mod N
 void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n,
-             uint32_t *n_prime, uint32_t *res) {
+             uint32_t *n_prime, uint32_t *res, uint32_t size) {
   int i;
   int bit;
 
@@ -35,7 +35,7 @@ void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n,
 
   // Calculate x_tilde = MontMul(x, R^2 mod m)
   //   R2_1024 is defined in global.h
-  // montgomery_multiply(msg, R2_1024, n, n_prime, x_tilde, SIZE);
+  montgomery_multiply(x, R2_1024, n, n_prime, x_tilde, size);
 
   // Copy R to A
   //   R_1024 is defined in global.h
@@ -49,47 +49,52 @@ void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n,
     xil_printf("Bit[%d] of exponent is: %d\n\r", exp_len, bit);
 
     // Calculate A = MontMul(A, A)
-    montgomery_multiply(A, A, n, n_prime, A, SIZE);
+    montgomery_multiply(A, A, n, n_prime, A, size);
 
     if (bit) {
       // Calculate A = MontMul(A, x_tilde)
-      montgomery_multiply(A, x_tilde, n, n_prime, A, SIZE);
+      montgomery_multiply(A, x_tilde, n, n_prime, A, size);
     }
   }
 
   // Calculate A = MontMul(A, 1)
   //   One is defined in global.h
   montgomery_multiply(A, One, n, n_prime, A, SIZE);
+
+  for (i = 0; i < size; i++) res[i] = A[i];
 }
 
 // Calculates res = (a * b / R) mod N where R = 2^1024
 void montgomery_multiply(uint32_t *a, uint32_t *b, uint32_t *n,
                          uint32_t *n_prime, uint32_t *res, uint32_t size) {
   uint32_t t[size + 2];
-  uint32_t S;
-  uint32_t C;
-  uint64_t sum;
   int i;
   for (i = 0; i < size + 2; i++) {
     t[i] = 0;
   }
 
   for (i = 0; i < size; i++) {
-    S = multiply_and_sum(a[0], b[i], t[0], 0);
-    C = get_carry();
+    uint64_t sum = (uint64_t)t[0] + (uint64_t)a[0] * (uint64_t)b[i];
+    uint32_t S = (uint32_t)sum;
+    uint32_t C = (uint32_t)(sum >> 32);
     add_carry(t, 1, C);
-    uint32_t m = multiply_and_sum(S, n_prime[0], 0, 0);
-    S = multiply_and_sum(m, n[0], S, 0);
-    C = get_carry();
+    uint32_t m = (uint64_t)S * (uint64_t)n_prime[0];
+    sum = (uint64_t)S + (uint64_t)m * (uint64_t)n[0];
+    S = (uint32_t)sum;
+    C = (uint32_t)(sum >> 32);
+
     int j;
     for (j = 1; j < size; j++) {
-      S = multiply_and_sum(a[j], b[i], t[j], C);
-      C = get_carry();
+      sum = (uint64_t)t[j] + (uint64_t)a[j] * (uint64_t)b[i] + (uint64_t)C;
+      S = (uint32_t)sum;
+      C = (uint32_t)(sum >> 32);
       add_carry(t, j + 1, C);
-      S = multiply_and_sum(m, n[j], S, 0);
-      C = get_carry();
+      sum = (uint64_t)S + (uint64_t)m * (uint64_t)n[j];
+      S = (uint32_t)sum;
+      C = (uint32_t)(sum >> 32);
       t[j - 1] = S;
     }
+    
     sum = t[size] + C;
     S = (uint32_t)sum;
     C = (uint32_t)(sum >> 32);
@@ -98,7 +103,9 @@ void montgomery_multiply(uint32_t *a, uint32_t *b, uint32_t *n,
     t[size + 1] = 0;
   }
   sub_cond(t, n, size);
-  res = t;
+  for (i = 0; i < size; i++) {
+    res[i] = t[i];
+  }
 }
 
 /* Conditional subtraction algorithm
@@ -144,24 +151,15 @@ void mod_add(uint32_t *a, uint32_t *b, uint32_t *n, uint32_t *res,
 void mod_sub(uint32_t *a, uint32_t *b, uint32_t *n, uint32_t *res,
              uint32_t size) {
   int i;
-  uint32_t tmp_res[size + 1];
-  uint32_t neg = mp_sub(a, b, res, size);
-  uint32_t empty[size];
-  int cond = res[size - 1] >> (size - 1);
-  if (neg == -1) {
-    while ((res[size - 1] >> (size - 1))) {
-      // printf("last res byte = %8x\ncond: %d", res[size-1], (res[size-1] >>
-      // (size-1)));
-      customprint(res, size);
-      mp_add(res, n, tmp_res, size);
-      for (i = 0; i < size; i++) {
-        res[i] = tmp_res[i];
-      }
-      customprint(res, size);
-      neg = mp_sub(res, n, empty, size);
-    }
-  } else {
+  uint32_t tmp_res[size];
+  if (mp_gte(a, b, size)) {
+    mp_sub(a, b, res, size);
     mod(res, n, size);
+  } else {
+    mp_sub(b, a, res, size);
+    mod(res, N, size);
+    mp_sub(N, res, tmp_res, size);
+    for (i = 0; i < size; i++) res[i] = tmp_res[i];
   }
 }
 
@@ -191,7 +189,7 @@ uint32_t mp_sub(uint32_t *a, uint32_t *b, uint32_t *res, uint32_t size) {
     single_result = (uint64_t)a[i] - b[i] + c;
     res[i] = (uint32_t)single_result;
     c = (uint32_t)(single_result >> 32);
-    if ((b[i] + c) > a[i]) {
+    if ((b[i] - c) > a[i]) {
       c = -1;
     } else {
       c = 0;
