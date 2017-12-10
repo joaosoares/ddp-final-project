@@ -33,7 +33,7 @@ module montgomery_exp(
  
 
     // Declare states
-    parameter START = 0;
+    parameter START = 0,
     ASSIGN_R = 1,
     ASSIGN_R2_START = 2,
     ASSIGN_R2_WAIT = 3,
@@ -54,11 +54,11 @@ module montgomery_exp(
 	// Declare state register
 	reg [3:0] state, nextstate;
 
-    // Datapath control in signals
+    // Datapath control in signals (Datapath -> FSM)
     wire mod_done, 
         mult_done;
 
-    //Datapath control out signals
+    //Datapath control out signals (FSM -> Datapath)
     reg start_mult,
         start_mod;
 
@@ -93,12 +93,13 @@ module montgomery_exp(
     );
     // example state machine for computation flow
     always @(*)
-        begin
-            case(state)
-                START: begin
-                mod_done <= 1'b0;
-                mult_done <= 1'b0;
+    begin
+        case(state)
+            START: begin
                 
+            end
+        endcase
+    end
 
 
     // next state logic
@@ -112,7 +113,7 @@ module montgomery_exp(
                 nextstate <= START;
         end
         ASSIGN_R: begin
-            nextstate <= ASSIGN_R2;
+            nextstate <= ASSIGN_R2_START;
         end
         ASSIGN_R2_START: begin
             nextstate <= ASSIGN_R2_WAIT;
@@ -158,11 +159,12 @@ module montgomery_exp(
                 nextstate <= LOOP_ASSIGN_A_WAIT;
             else
                 nextstate <= LOOP_IF_BIT;
-        LOOP_IF_BIT:begin
-            if(cur_bit == 1´b1)
+        end
+        LOOP_IF_BIT: begin
+            if(cur_bit == 1'b1)
                 nextstate <= LOOP_IF_BIT_ASSIGN_A_START;
             else
-                nextstate <= LOOP_MULT_A_BY_ONE
+                nextstate <= LOOP_MULT_A_BY_ONE;
         end
         LOOP_IF_BIT_ASSIGN_A_START: begin
             nextstate <= LOOP_IF_BIT_ASSIGN_A_WAIT;
