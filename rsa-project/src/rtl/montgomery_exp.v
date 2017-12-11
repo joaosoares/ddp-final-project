@@ -42,21 +42,22 @@ module montgomery_exp(
     X_TILDE_WAIT = 4,
     X_TILDE_ASSIGN = 5,
     WAIT_UNTIL_BITLEN = 6,
-    LOOP_START = 7,
-    LOOP_A_SETUP = 8,
-    LOOP_A_START = 9,
-    LOOP_A_WAIT = 10,
-    LOOP_A_ASSIGN = 11,
-    LOOP_IF_BIT = 12,
-    LOOP_IF_BIT_A_SETUP = 13,
-    LOOP_IF_BIT_A_START = 14,
-    LOOP_IF_BIT_A_WAIT = 15,
-    LOOP_IF_BIT_A_ASSIGN = 16,
-    MULT_A_BY_ONE_SETUP = 17,
-    MULT_A_BY_ONE_START = 18,
-    MULT_A_BY_ONE_WAIT = 19,
-    MULT_A_BY_ONE_ASSIGN = 20,
-    DONE = 21;
+    DECREMENT_COUNTER = 7,
+    LOOP_START = 8,
+    LOOP_A_SETUP = 9,
+    LOOP_A_START = 10,
+    LOOP_A_WAIT = 11,
+    LOOP_A_ASSIGN = 12,
+    LOOP_IF_BIT = 13,
+    LOOP_IF_BIT_A_SETUP = 14,
+    LOOP_IF_BIT_A_START = 15,
+    LOOP_IF_BIT_A_WAIT = 16,
+    LOOP_IF_BIT_A_ASSIGN = 17,
+    MULT_A_BY_ONE_SETUP = 18,
+    MULT_A_BY_ONE_START = 19,
+    MULT_A_BY_ONE_WAIT = 20,
+    MULT_A_BY_ONE_ASSIGN = 21,
+    DONE = 22;
 
 	// Declare state register
 	reg [3:0] state, nextstate;
@@ -69,7 +70,7 @@ module montgomery_exp(
         assign_a_flag,
         setup_x_tilde_flag,
         assign_x_tilde_flag,
-        wait_until_bitlen_flag,
+        decrement_counter_flag,
         setup_loop_a_flag,
         assign_loop_a_flag,
         setup_if_bit_a_flag,
@@ -78,7 +79,7 @@ module montgomery_exp(
         assign_a_by_one_flag;
 
     // Datapath signals
-    reg [15:0] counter;                 // Loop counter
+    reg [10:0] counter;                 // Loop counter
     reg [511:0] mult_in_a, mult_in_b;   // Mult inputs
     wire [511:0] mult_result;           // Mult result
     reg [511:0] var_a, var_x_tilde, var_result;     // Algorithm variables
@@ -113,7 +114,7 @@ module montgomery_exp(
                 assign_a_flag <= 1;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -127,7 +128,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 1;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -140,7 +141,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -153,7 +154,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 1;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -161,12 +162,12 @@ module montgomery_exp(
                 setup_a_by_one_flag <= 0;
                 assign_a_by_one_flag <= 0;
             end
-            WAIT_UNTIL_BITLEN: begin
+            DECREMENT_COUNTER: begin
                 start_mult <= 0;
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 1;
+                decrement_counter_flag <= 1;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -179,7 +180,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 1;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -192,7 +193,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -205,7 +206,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 1;
                 setup_if_bit_a_flag <= 0;
@@ -218,7 +219,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 1;
@@ -231,7 +232,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -244,7 +245,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -257,7 +258,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -270,7 +271,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -283,7 +284,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -296,7 +297,7 @@ module montgomery_exp(
                 assign_a_flag <= 0;
                 setup_x_tilde_flag <= 0;
                 assign_x_tilde_flag <= 0;
-                wait_until_bitlen_flag <= 0;
+                decrement_counter_flag <= 0;
                 setup_loop_a_flag <= 0;
                 assign_loop_a_flag <= 0;
                 setup_if_bit_a_flag <= 0;
@@ -340,14 +341,17 @@ module montgomery_exp(
             // t = helpers.bitlen(E)
             WAIT_UNTIL_BITLEN: begin
                 if(!cur_bit)
-                    nextstate <= WAIT_UNTIL_BITLEN;
+                    nextstate <= DECREMENT_COUNTER;
                 else
                     nextstate <= LOOP_START;
+            end
+            DECREMENT_COUNTER: begin
+                nextstate <= WAIT_UNTIL_BITLEN;
             end
             // for i in range(0,t):
             LOOP_START: begin
                 if (counter > 0)
-                    nextstate <= LOOP_A_START;
+                    nextstate <= LOOP_A_SETUP;
                 else
                     nextstate <= MULT_A_BY_ONE_START;
             end
@@ -408,7 +412,10 @@ module montgomery_exp(
             end
             // return A
             DONE: begin
-                nextstate <= DONE;
+                if (!start)
+                    nextstate <= DONE;
+                else
+                    nextstate <= START;
             end
         endcase
     end
@@ -417,7 +424,7 @@ module montgomery_exp(
 	always @(posedge clk)
 	begin
 	    if (start) begin
-	        counter <= 32'b11111111111111111111111111111111;
+	        counter <= 511;
 	    end
         else if (assign_a_flag) begin
             var_a <= in_rmodm;
@@ -429,7 +436,7 @@ module montgomery_exp(
         else if (assign_x_tilde_flag) begin
             var_x_tilde <= mult_result;
         end
-        else if (wait_until_bitlen_flag) begin
+        else if (decrement_counter_flag) begin
             counter <= counter - 1;
         end
         else if (setup_loop_a_flag) begin
