@@ -56,7 +56,7 @@ module adder(
             end
             else if (in_execution == 1'b1)
             begin
-                if (counter != 4) begin
+                if (counter < 4) begin
                     if (subtract == 1'b0) begin
                         reg_result <= {add_out[103:0], reg_result[513:104]};
                         c <= add_out[104];
@@ -66,7 +66,7 @@ module adder(
                         c <= sub_out[104];
                     end
                 end
-                else begin
+                else if (counter == 4) begin
                     if (subtract == 1'b0) begin
                         reg_result <= {add_out[98:0], reg_result[513:98]};
                         c <= add_out[99];
@@ -79,8 +79,11 @@ module adder(
                
                 a <= a>>104;
                 b <= b>>104;
-                if (counter == 4)
+                if (counter >= 4) begin
+                    if (counter == 4)
+                        counter <= counter +1;
                     done_sig <= 1;
+                end
                 else
                     counter <= counter + 1;
             end

@@ -13,7 +13,7 @@ module tb_montgomery_exp();
     reg  [511:0] in_m;
     reg  [511:0] in_rmodm;
     reg  [511:0] in_r2modm;
-    wire [511:0] res;
+    wire [511:0] result;
     wire         done;
 
     reg  [511:0] expected;

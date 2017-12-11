@@ -53,14 +53,15 @@ module montgomery_exp(
     LOOP_IF_BIT_A_START = 15,
     LOOP_IF_BIT_A_WAIT = 16,
     LOOP_IF_BIT_A_ASSIGN = 17,
-    MULT_A_BY_ONE_SETUP = 18,
-    MULT_A_BY_ONE_START = 19,
-    MULT_A_BY_ONE_WAIT = 20,
-    MULT_A_BY_ONE_ASSIGN = 21,
-    DONE = 22;
+    LOOP_END = 18,
+    MULT_A_BY_ONE_SETUP = 19,
+    MULT_A_BY_ONE_START = 20,
+    MULT_A_BY_ONE_WAIT = 21,
+    MULT_A_BY_ONE_ASSIGN = 22,
+    DONE = 23;
 
 	// Declare state register
-	reg [3:0] state, nextstate;
+	reg [4:0] state, nextstate;
 
     // Datapath control in signals (Datapath -> FSM)
     wire mult_done, cur_bit;
@@ -253,6 +254,19 @@ module montgomery_exp(
                 setup_a_by_one_flag <= 0;
                 assign_a_by_one_flag <= 0;
             end
+            LOOP_END: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                decrement_counter_flag <= 1;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
             MULT_A_BY_ONE_SETUP: begin
                 start_mult <= 0;
                 assign_a_flag <= 0;
@@ -350,10 +364,7 @@ module montgomery_exp(
             end
             // for i in range(0,t):
             LOOP_START: begin
-                if (counter > 0)
-                    nextstate <= LOOP_A_SETUP;
-                else
-                    nextstate <= MULT_A_BY_ONE_START;
+                nextstate <= LOOP_A_SETUP;
             end
             // A = MontMul_512(A,A,M)
             LOOP_A_SETUP: begin
@@ -369,14 +380,14 @@ module montgomery_exp(
                     nextstate <= LOOP_A_ASSIGN;
             end
             LOOP_A_ASSIGN: begin
-                nextstate <= WAIT_UNTIL_BITLEN;
+                nextstate <= LOOP_IF_BIT;
             end
             // if helpers.bit(E,t-i-1) == 1:
             LOOP_IF_BIT: begin
                 if (cur_bit)
                     nextstate <= LOOP_IF_BIT_A_SETUP;
                 else
-                    nextstate <= LOOP_A_START;
+                    nextstate <= LOOP_END;
             end
             // A = MontMul_512(A,X_tilde,M)
             LOOP_IF_BIT_A_SETUP: begin
@@ -392,7 +403,13 @@ module montgomery_exp(
                     nextstate <= LOOP_IF_BIT_A_ASSIGN;
             end
             LOOP_IF_BIT_A_ASSIGN: begin
-                nextstate <= LOOP_START;
+                nextstate <= LOOP_END;
+            end
+            LOOP_END: begin
+                if (counter > 0)
+                    nextstate <= LOOP_START;
+                else
+                    nextstate <= MULT_A_BY_ONE_SETUP;
             end
             // A = MontMul_512(A,1,M)
             MULT_A_BY_ONE_SETUP: begin

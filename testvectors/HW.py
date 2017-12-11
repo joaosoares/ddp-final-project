@@ -41,6 +41,7 @@ def MontMul_512(A, B, M):
 def MontExp_512(X, E, M):
     # Returns (X^E) mod M
     R  = 2**512
+    import pdb; pdb.set_trace()
     R2 = (R*R) % M;
     A  = R % M;
     X_tilde = MontMul_512(X,R2,M)

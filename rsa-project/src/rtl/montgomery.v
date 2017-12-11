@@ -287,7 +287,7 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 				if (!start)
 					nextstate <= DONE;
 				else
-					nextstate <= START;
+					nextstate <= LOOP_START;
 			end
 			default: nextstate <= START;
 		endcase

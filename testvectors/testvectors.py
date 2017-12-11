@@ -87,27 +87,28 @@ if operation == 4:
 
   print "Test Vector for Montgomery Exponentiation\n"
 
-  X = helpers.getRandomInt(1024)
-  E = helpers.getRandomInt(8)
-  M = helpers.getModulus(1024)
-  M_prime = helpers.Modinv(M, 2**1024)
-  C = SW.MontExp_1024(X, E, M)
+  X = helpers.getRandomInt(512)
+  E = helpers.getRandomInt(508)
+  M = helpers.getModulus(512)
+
+  X = 0xb55708a7f2daa5631117b7d03ec4d7992ccad8d7e22d891db1e03e15ad545a33fc9f444b1a16dbae60d527f8f7118db19d65258cb9977527fbfc19786b18ba76
+  E = 0xb1
+  M = 0xd9bf2caaf3992d7e456563271a7c22da97d772cf8fb8a8d34756a335657daf63eff091961c4ea3c56066c5822baa68d108e9b45d95aa98852b71d44daca7419f
+  R  = 2**512
+  RmodM = R % M
+  R2modM = (R*R) % M
+  C = HW.MontExp_512(X, E, M)
   D = helpers.Modexp(X, E, M)
   e = C - D
 
   print "X                = ", hex(X)           # 512-bits
   print "E                = ", hex(E)           # 8-bits
   print "M                = ", hex(M)           # 512-bits
-  print "M prime          = ", hex(M_prime)           # 512-bits
+  print "RmodM            = ", hex(RmodM)       # 512-bits
+  print "R2modM           = ", hex(R2modM)      # 512-bits
   print "(X^E) mod M      = ", hex(C)           # 512-bits
   print "(X^E) mod M      = ", hex(D)           # 512-bits
   print "error            = ", hex(e)         
-
-  helpers.print2array(X, 'x', 32)
-  helpers.print2array(E, 'e', 1)
-  helpers.print2array(M, 'm', 32)
-  helpers.print2array(M_prime, 'm_prime', 32)
-  helpers.print2array(C, 'expected', 32)
 
 #####################################################
 
@@ -240,10 +241,10 @@ if operation == 5:
         # If need to debug, by observing the intermediate values,
         # then can be uncommented.
 
-  # P_p = HW.MontExp_512(Ct_p, d_p, p)           # 512-bit HW modular exp.
-  # P_q = HW.MontExp_512(Ct_q, d_q, q)           # 512-bit HW modular exp.
-  P_p = helpers.Modexp(Ct_p, d_p, p)            # 512-bit HW modular exp.
-  P_q = helpers.Modexp(Ct_q, d_q, q)            # 512-bit HW modular exp.
+  P_p = HW.MontExp_512(Ct_p, d_p, p)           # 512-bit HW modular exp.
+  P_q = HW.MontExp_512(Ct_q, d_q, q)           # 512-bit HW modular exp.
+  # P_p = helpers.Modexp(Ct_p, d_p, p)            # 512-bit HW modular exp.
+  # P_q = helpers.Modexp(Ct_q, d_q, q)            # 512-bit HW modular exp.
   
   # Inverse CRT, in Software
   #
