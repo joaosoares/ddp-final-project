@@ -1,1 +1,1 @@
-// void xil_printf(const char * format, ... );
+void xil_printf(const char * format, ... );

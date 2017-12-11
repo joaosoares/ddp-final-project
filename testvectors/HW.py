@@ -28,7 +28,7 @@ def MultiPrecisionAdd(A, B, addsub):
 def MontMul_512(A, B, M):
     # Returns (A*B*Modinv(R,M)) mod M
     C = 0
-    import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     for i in range(0,512):
         C = MultiPrecisionAdd(C, helpers.bit(A,i)*B, "add")
         if (C % 2) != 0:
@@ -50,4 +50,26 @@ def MontExp_512(X, E, M):
         if helpers.bit(E,t-i-1) == 1:
             A = MontMul_512(A,X_tilde,M)
     A = MontMul_512(A,1,M)
+    return A
+
+
+def MontMul_1024(A, B, M):
+    # Returns (A*B*Modinv(R,M)) mod M
+    R = 2**1024
+    return (A*B*helpers.Modinv(R,M)) % M
+    
+
+def MontExp_1024(X, E, M):
+    # Returns (X^E) mod M
+    R  = 2**1024
+    R2 = (R*R) % M;
+    import pdb; pdb.set_trace()
+    A  = R % M;
+    X_tilde = MontMul_1024(X,R2,M)
+    t = helpers.bitlen(E)
+    for i in range(0,t):
+        A = MontMul_1024(A,A,M)
+        if helpers.bit(E,t-i-1) == 1:
+            A = MontMul_1024(A,X_tilde,M)
+    A = MontMul_1024(A,1,M)
     return A

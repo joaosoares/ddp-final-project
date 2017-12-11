@@ -27,144 +27,118 @@ extern uint32_t M[32],
 
 // Note that these tree CMDs are same as
 // they are defined in montgomery_wrapper.v
-#define CMD_READ_A1_A2    0
-#define CMD_READ_B1_B2    1
-#define CMD_READ_M1_M2    2
-#define CMD_MULTIPLY      3
-#define CMD_WRITE         4
+#define CMD_READ_X1_X2     0
+#define CMD_READ_E1_E2     1
+#define CMD_READ_M1_M2     2
+#define CMD_READ_R2M1_R2M2 3
+#define CMD_READ_RM1_RM2   4
+#define CMD_EXPONENTIATE   5
+#define CMD_MULTIPLY       6
+#define CMD_WRITE          7
 
-// int main()
-// {
-//     int i;
+int main()
+{
+    int i;
 
-//     init_platform();
-//     init_performance_counters(1);
-//     interface_init();
+    init_platform();
+    init_performance_counters(1);
+    interface_init();
 
-//     xil_printf("Startup..\n\r");
+    xil_printf("Startup..\n\r");
 
-//     START_TIMING
-// 	test_dma_transfer();
-//     STOP_TIMING
+    START_TIMING
+	  test_dma_transfer();
+    STOP_TIMING
 
-//     ////////////// Test the port-based communication //////////////
+    /// ENCRYPTION
+    uint32_t Ct2[32];
+    modexp(M, e, e_len, N, N_prime, R2_1024, R_1024, Ct2);
 
-// 	//// --- Create and initialize src array
+    /// DECRYPTION
+    uint32_t Ct2h[16];
+    for(i = 0; i < 16; i++) Ct2h[i] = Ct2[i+16];
 
-// #if NUMBER_OF_CORES == 1
-// 	// If NUMBER_OF_CORES == 1
-// 	// then all 16 words defined below will be used to communicate with Core 1
+    uint32_t Ct2l[16];
+    for(i = 0; i < 16; i++) Ct2h[i] = Ct2[i];
 
-// 	unsigned int src[DMA_TRANSFER_NUMBER_OF_WORDS]={
-// 		0x00000000, 0x00000000, 0x01234567, 0x89abcdef,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000};
-// #else
-//     // If NUMBER_OF_CORES == 2
-//     // then 32 words will be defined,
-//     //      the words  0 to 15 will be used to communicate with Core 1
-//     //      the words 16 to 31 will be used to communicate with Core 2
-
-//     unsigned int src[DMA_TRANSFER_NUMBER_OF_WORDS]={
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x76543210, 0xfedcba98, 0x00000000, 0x00000000,
-
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x00000000, 0x00000000, 0x00000000, 0x00000000,
-// 		0x89abcdef, 0x01234567, 0x00000000, 0x00000000};
-
-//     // If you need, you can use the src1 and src2 pointers 
-//     // to access the src array defined above as two individual arrays.
-//     // src1 for the lower  16-words of the src array and
-//     // src2 for the higher 16-words
-//     unsigned int* src1 = src;
-//     unsigned int* src2 = src+16;
-// #endif
-//     //// --- Perform the send operation
-
-//     // Start by writing CMD_READ to port1 (command port)
-//     xil_printf("PORT1=%x\n\r",CMD_READ_A1_A2);
-//     my_montgomery_port[0] = CMD_READ_A1_A2;
-
-//     // Transfer the src array to BRAM
-//     bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
-
-//     // Wait for done of CMD_READ is done
-//     // by waiting for port2 (acknowledgement port)
-//     port2_wait_for_done();
+    uint32_t tp[16];
+    // Start by writing CMD_READ to port1 (command port)
+    xil_printf("PORT1=%x\n\r",CMD_READ_X1_X2);
+    my_montgomery_port[0] = CMD_READ_A1_A2;
+    // Transfer the src array to BRAM
+    uint32_t transfer[32] = {0};
+    for(i = 0; i < 16; i++) transfer[i] = Ct2h[i];
+    bram_dma_transfer(dma_config,transfer,DMA_TRANSFER_NUMBER_OF_WORDS);
+    port2_wait_for_done();
 
 
-//     //// --- Print BRAM contents
-//     // For checking if send is successful
-//     print_bram_contents();
+    //// --- Print BRAM contents
+    // For checking if send is successful
+    print_bram_contents();
 
-//     // Start by writing CMD_READ to port1 (command port)
-//     xil_printf("PORT1=%x\n\r",CMD_READ_B1_B2);
-//     my_montgomery_port[0] = CMD_READ_B1_B2;
+    // Start by writing CMD_READ to port1 (command port)
+    xil_printf("PORT1=%x\n\r",CMD_READ_B1_B2);
+    my_montgomery_port[0] = CMD_READ_B1_B2;
 
-//     // Transfer the src array to BRAM
-//     bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
+    // Transfer the src array to BRAM
+    bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
 
-//     // Wait for done of CMD_READ is done
-//     // by waiting for port2 (acknowledgement port)
-//     port2_wait_for_done();
-
-
-//     //// --- Print BRAM contents
-//     // For checking if send is successful
-//     print_bram_contents();
-
-//     // Start by writing CMD_READ to port1 (command port)
-//     xil_printf("PORT1=%x\n\r",CMD_READ_M1_M2);
-//     my_montgomery_port[0] = CMD_READ_M1_M2;
-
-//     // Transfer the src array to BRAM
-//     bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
-
-//     // Wait for done of CMD_READ is done
-//     // by waiting for port2 (acknowledgement port)
-//     port2_wait_for_done();
+    // Wait for done of CMD_READ is done
+    // by waiting for port2 (acknowledgement port)
+    port2_wait_for_done();
 
 
-//     //// --- Print BRAM contents
-//     // For checking if send is successful
-//     print_bram_contents();
+    //// --- Print BRAM contents
+    // For checking if send is successful
+    print_bram_contents();
+
+    // Start by writing CMD_READ to port1 (command port)
+    xil_printf("PORT1=%x\n\r",CMD_READ_M1_M2);
+    my_montgomery_port[0] = CMD_READ_M1_M2;
+
+    // Transfer the src array to BRAM
+    bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
+
+    // Wait for done of CMD_READ is done
+    // by waiting for port2 (acknowledgement port)
+    port2_wait_for_done();
 
 
-//     //// --- Perform the compute operation
-
-//     // Start by writing CMD_COMPUTE to port1 (command port)
-//     xil_printf("PORT1=%x\n\r",CMD_MULTIPLY);
-//     my_montgomery_port[0] = CMD_MULTIPLY;
-
-//     // Wait for done of CMD_COMPUTE is done
-// 	// by waiting for port2 (acknowledgement port)
-//     port2_wait_for_done();
+    //// --- Print BRAM contents
+    // For checking if send is successful
+    print_bram_contents();
 
 
-//     //// --- Perform the read operation
+    //// --- Perform the compute operation
 
-//     // Start by writing CMD_WRITE to port1 (command port)
-//     xil_printf("PORT1=%x\n\r",CMD_WRITE);
-//     my_montgomery_port[0] = CMD_WRITE;
+    // Start by writing CMD_COMPUTE to port1 (command port)
+    xil_printf("PORT1=%x\n\r",CMD_MULTIPLY);
+    my_montgomery_port[0] = CMD_MULTIPLY;
 
-//     // Wait for done of CMD_WRITE is done
-//     port2_wait_for_done(); //Wait until Port2=1
+    // Wait for done of CMD_COMPUTE is done
+	// by waiting for port2 (acknowledgement port)
+    port2_wait_for_done();
 
 
-//     //// --- Print BRAM contents
+    //// --- Perform the read operation
 
-//     // For receiving the read output of the computation
-//     print_bram_contents();
+    // Start by writing CMD_WRITE to port1 (command port)
+    xil_printf("PORT1=%x\n\r",CMD_WRITE);
+    my_montgomery_port[0] = CMD_WRITE;
 
-//     cleanup_platform();
+    // Wait for done of CMD_WRITE is done
+    port2_wait_for_done(); //Wait until Port2=1
 
-//     return 0;
-// }
+
+    //// --- Print BRAM contents
+
+    // For receiving the read output of the computation
+    print_bram_contents();
+
+    cleanup_platform();
+
+    return 0;
+}
 /* AUTOGENERATED FILE. DO NOT EDIT. */
 
 /*=======Test Runner Used To Run Each Test Below=====*/

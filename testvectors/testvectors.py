@@ -94,34 +94,41 @@ if operation == 4:
 
   X = helpers.getRandomInt(1024)
   E = helpers.getRandomInt(16)
-  M = helpers.getModulus(1024)
-    # X = 0xb55708a7f2daa5631117b7d03ec4d7992ccad8d7e22d891db1e03e15ad545a33fc9f444b1a16dbae60d527f8f7118db19d65258cb9977527fbfc19786b18ba76
+  N = helpers.getModulus(1024)
+  # Hardware values
+  # X = 0xb55708a7f2daa5631117b7d03ec4d7992ccad8d7e22d891db1e03e15ad545a33fc9f444b1a16dbae60d527f8f7118db19d65258cb9977527fbfc19786b18ba76
   # E = 0xb1
   # M = 0xd9bf2caaf3992d7e456563271a7c22da97d772cf8fb8a8d34756a335657daf63eff091961c4ea3c56066c5822baa68d108e9b45d95aa98852b71d44daca7419f
 
+  X =  0xd394854091a4bd576e831c047f8dbd3962c6176e4ac73a271b34d4d64a047fad949e7f5db4f2b561ac3054aa79f1ea1667392a6effc533fdb3910f7e0382a78a3e69c71b718dbfcb525d5ad61c6d04e9a99d80775e84c0ac2581853fb7dbbcbbbcdd23af4d92fcecc53baeeb63951386d4801e7eec875fefcdcc53e97e4d114f
+  E =  0x8aa7
+  N =  0xe463552f57f41ea0eba321a7207bedda838f187b75f5ed7af76f70d25b9a2c0d84e0b5943885d4c7682cf637fe44cce70610f8532fcaa42a56867970060e1237bf1feed8fd0f3441ae8bf2c011b530c1cf173a564f448e34b49ba79804bf4901cf6df0c2bc79bc4d90ff37b204f9addb4c4a72d2d9315b454fd2954279c5095d
+
   # M_prime = helpers.Modinv(M, 2**1024)
-  C = SW.MontExp_1024(X, E, M)
-  D = helpers.Modexp(X, E, M)
+  C = HW.MontExp_1024(X, E, N)
+  D = helpers.Modexp(X, E, N)
   e = C - D
 
   print "X = ", hex(X)           # 1024-bits
   print "E = ", hex(E)           # 16-bits
 
   r = 2**1024
-  N_prime = (r - helpers.Modinv(M, r)) 
+  N_prime = (r - helpers.Modinv(N, r)) 
   
-  print "N = ", hex(M) # 1024-bits
+  print "N = ", hex(N) # 1024-bits
   print "N_prime = ", hex(N_prime) # 1024-bits
   print "(X^E) mod M = ", hex(C) # 1024-bits
   print "(X^E) mod M = ", hex(D) # 1024-bits
   print "error = ", hex(e) 
 
-  # helpers.print2array(X, 'x', 32)
-  # helpers.print2array(E, 'e', 1)
-  # helpers.print2array(M, 'm', 32)
-  # helpers.print2array(M_prime, 'm_prime', 32)
-  # helpers.print2array(C, 'expected', 32)
-
+  helpers.print2array(X, 'x', 32)
+  helpers.print2array(E, 'e', 1)
+  helpers.print2array(N, 'n', 32)
+  helpers.print2array(N_prime, 'n_prime', 32)
+  helpers.print2array((r*r) % N, 'r2m', 32)
+  helpers.print2array(r % N, 'rm', 32)
+  helpers.print2array(C, 'expected', 32)
+  import pdb; pdb.set_trace()
 #####################################################
 
 if operation == 5:
@@ -290,3 +297,6 @@ if operation == 5:
   print "Plaintext    = ", hex(Pt3)             # 1024-bits
 
   print "\n\ntestvector.c file is created in this directory."
+
+
+  

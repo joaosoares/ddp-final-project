@@ -71,6 +71,9 @@ module montgomery_wrapper
     localparam STATE_WRITE_PORT2    = 4'd8;
     localparam STATE_EXP_START      = 4'd9;
     localparam STATE_EXP_WAIT       = 4'd10;
+    localparam STATE_MULT_START     = 4'd11;
+    localparam STATE_MULT_WAIT      = 4'd12;
+    
 
     reg [STATE_BITS-1:0] r_state;
     reg [STATE_BITS-1:0] next_state;
@@ -80,12 +83,13 @@ module montgomery_wrapper
     localparam CMD_READ_M1_M2       = 32'h2;
     localparam CMD_READ_R2M1_R2M2   = 32'h3;
     localparam CMD_READ_RM1_RM2     = 32'h4;
-    localparam CMD_EXP_START        = 32'h5;    
-    localparam CMD_WRITE            = 32'h6;
+    localparam CMD_EXP_START        = 32'h5;
+    localparam CMD_MULT_START       = 32'h6;    
+    localparam CMD_WRITE            = 32'h7;
 
 
-    wire mont1_done;
-    wire mont2_done;
+    wire mont_exp_done;
+    wire mont_mult_done;
 
 
     ////////////// - State Machine
@@ -114,6 +118,8 @@ module montgomery_wrapper
                                     next_state <= STATE_READ_RM1_RM2;
                                 CMD_EXP_START:                            
                                     next_state <= STATE_EXP_START;                                
+                                CMD_MULT_START:                            
+                                    next_state <= STATE_MULT_START;                                
                                 CMD_WRITE:
                                     next_state <= STATE_WRITE_RESULTS;
                                 default:
@@ -148,8 +154,18 @@ module montgomery_wrapper
                     next_state <= STATE_EXP_WAIT;
 
                 STATE_EXP_WAIT:
-                    if(!mont1_done || !mont2_done)
+                    if(!mont_exp_done)
                         next_state <= STATE_EXP_WAIT;
+                    else
+                        next_state <= STATE_WRITE_PORT2 ;
+              
+                STATE_MULT_START: 
+                    //Perform a computation on r_tmp
+                    next_state <= STATE_EXP_WAIT;
+
+                STATE_MULT_WAIT:
+                    if(!mont_mult_done)
+                        next_state <= STATE_MULT_WAIT;
                     else
                         next_state <= STATE_WRITE_PORT2 ;
                 
@@ -199,6 +215,7 @@ module montgomery_wrapper
     reg [511:0] core2_data;
 
     reg exp_start;
+    reg mult_start;
 
     always @(posedge(clk))
         if (resetn==1'b0)
@@ -236,6 +253,7 @@ module montgomery_wrapper
                     core1_data <= core1_data;
                     core2_data <= core2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
                 STATE_READ_E1_E2: begin
                     if ((bram_din_valid==1'b1)) begin
@@ -256,6 +274,7 @@ module montgomery_wrapper
                     core1_data <= core1_data;
                     core2_data <= core2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                     
                 end
                 STATE_READ_M1_M2:begin
@@ -277,6 +296,7 @@ module montgomery_wrapper
                     core1_data <= core1_data;
                     core2_data <= core2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
                 STATE_READ_R2M1_R2M2:begin
                     if ((bram_din_valid==1'b1)) begin
@@ -297,6 +317,7 @@ module montgomery_wrapper
                     core1_data <= core1_data;
                     core2_data <= core2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
                 STATE_READ_RM1_RM2: begin
                     if ((bram_din_valid==1'b1)) begin
@@ -317,6 +338,7 @@ module montgomery_wrapper
                     core1_data <= core1_data;
                     core2_data <= core2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
                 STATE_EXP_START: begin
                     core1_data <= res1_data;
@@ -332,6 +354,23 @@ module montgomery_wrapper
                     rm1_data <= rm1_data;
                     rm2_data <= rm2_data;
                     exp_start <= 1'b1;
+                    mult_start <= 1'b0;
+                end
+                STATE_MULT_START: begin
+                    core1_data <= res1_data;
+                    core2_data <= res2_data;
+                    x1_data <= x1_data; 
+                    x2_data <= x2_data; 
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
+                    exp_start <= 1'b0;
+                    mult_start <= 1'b1;
                 end
 
                 STATE_WRITE_RESULTS: begin
@@ -348,6 +387,7 @@ module montgomery_wrapper
                     rm1_data <= rm1_data;
                     rm2_data <= rm2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
                 default: begin
                     core1_data <= core1_data;
@@ -363,6 +403,7 @@ module montgomery_wrapper
                     rm1_data <= rm1_data;
                     rm2_data <= rm2_data;
                     exp_start <= 1'b0;
+                    mult_start <= 1'b0;
                 end
             endcase;
         end
@@ -380,20 +421,18 @@ module montgomery_wrapper
         rm1_data,
         r2m1_data,
         res1_data,
-		mont1_done
+		mont_exp_done
 	);
 
-	montgomery_exp mont2(
+	montgomery mont2(
 		clk,
 		resetn,
-		exp_start,
-		x2_data,
-		e2_data,
-		m2_data,
-        rm2_data,
-        r2m2_data,
+		mult_start,
+		x1_data,
+		e1_data,
+		m1_data,
         res2_data,
-		mont2_done
+		mont_mult_done
 	);
 
     ////////////// - Valid signals for notifying that the computation is done

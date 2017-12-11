@@ -1,5 +1,5 @@
-// #include "mock_xil_printf.h"
+#include "mock_xil_printf.h"
 
-// void xil_printf(const char * format, ... ) {
+void xil_printf(const char * format, ... ) {
 
-// }
+}

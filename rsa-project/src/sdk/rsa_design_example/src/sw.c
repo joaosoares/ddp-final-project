@@ -1,11 +1,8 @@
 #include <stdint.h>
 
-#ifdef __APPLE__
+
 #include <stdio.h>
-#include "../test/mock_xil_printf.h"
-#else
-#include "xil_printf.h"
-#endif
+// #include "xil_printf.h"
 
 #define SIZE 32
 
@@ -27,19 +24,22 @@ void customprint(uint32_t *a, int size) {
 
 // Calculates res = (x^exp) mod N
 void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n,
-             uint32_t *n_prime, uint32_t *res, uint32_t size) {
+             uint32_t *n_prime, uint32_t *r2m, uint32_t *rm, uint32_t *res, uint32_t size) {
   int i;
   int bit;
 
-  uint32_t x_tilde[32], A[32];
+  printf("x = \n"); customprint(x, 32);
+  printf("n = "); customprint(n, 32);
+  printf("n_prime = "); customprint(n_prime, 32);
+  uint32_t x_tilde[32], A[32], temp_res[32];
 
   // Calculate x_tilde = MontMul(x, R^2 mod m)
   //   R2_1024 is defined in global.h
-  montgomery_multiply(x, R2_1024, n, n_prime, x_tilde, size);
+  montgomery_multiply(x, r2m, n, n_prime, x_tilde, size);
 
   // Copy R to A
   //   R_1024 is defined in global.h
-  for (i = 0; i < 32; i++) A[i] = R_1024[i];
+  for (i = 0; i < 32; i++) A[i] = rm[i];
 
   while (exp_len > 0) {
     exp_len--;
@@ -48,20 +48,43 @@ void mod_exp(uint32_t *x, uint32_t *exp, uint32_t exp_len, uint32_t *n,
 
     xil_printf("Bit[%d] of exponent is: %d\n\r", exp_len, bit);
 
-    // Calculate A = MontMul(A, A)
-    montgomery_multiply(A, A, n, n_prime, A, size);
+    printf("A before = ");
+    customprint(A, 32);
 
+    // Calculate A = MontMul(A, A)
+    montgomery_multiply(A, A, n, n_prime, temp_res, size);
+    for (i = 0; i < 32; i++) A[i] = temp_res[i];
+
+    printf("temp res = ");
+    customprint(temp_res, 32);
     if (bit) {
       // Calculate A = MontMul(A, x_tilde)
-      montgomery_multiply(A, x_tilde, n, n_prime, A, size);
+      montgomery_multiply(A, x_tilde, n, n_prime, temp_res, size);
+      for (i = 0; i < 32; i++) A[i] = temp_res[i];
+      printf("A = ");
+      customprint(A, 32);
     }
   }
 
   // Calculate A = MontMul(A, 1)
   //   One is defined in global.h
-  montgomery_multiply(A, One, n, n_prime, A, SIZE);
+  montgomery_multiply(A, One, n, n_prime, A, size);
 
   for (i = 0; i < size; i++) res[i] = A[i];
+}
+
+
+/* Carry addition algorithm
+ *
+ */
+void add_carry(uint32_t *t, uint32_t i, uint32_t c) {
+  while (c != 0) {
+    uint64_t sum = (uint64_t) t[i] + (uint64_t) c;
+    uint32_t S = (uint32_t)sum;
+    c = (uint32_t)(sum >> 32);
+    t[i] = S;
+    i++;
+  }
 }
 
 // Calculates res = (a * b / R) mod N where R = 2^1024
