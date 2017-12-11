@@ -27,50 +27,62 @@ module montgomery_exp(
     input [511:0] in_x,
     input [511:0] in_e,
     input [511:0] in_m,
-    output [511:0] res,
+    input [511:0] in_rmodm,
+    input [511:0] in_r2modm,
+    output [511:0] result,
     output done
     );
  
 
     // Declare states
     parameter START = 0,
-    ASSIGN_R = 1,
-    ASSIGN_R2_START = 2,
-    ASSIGN_R2_WAIT = 3,
-    ASSIGN_A_START = 4,
-    ASSIGN_A_WAIT = 5,
-    ASSIGN_X_TILDE_START = 6,
-    ASSIGN_X_TILDE_WAIT = 7,
-    ASSIGN_T = 8,
-    LOOP_START = 9,
-    LOOP_ASSIGN_A_START = 10,
-    LOOP_ASSIGN_A_WAIT = 11,
+    A_ASSIGN = 1,
+    X_TILDE_SETUP = 2,
+    X_TILDE_START = 3,
+    X_TILDE_WAIT = 4,
+    X_TILDE_ASSIGN = 5,
+    WAIT_UNTIL_BITLEN = 6,
+    LOOP_START = 7,
+    LOOP_A_SETUP = 8,
+    LOOP_A_START = 9,
+    LOOP_A_WAIT = 10,
+    LOOP_A_ASSIGN = 11,
     LOOP_IF_BIT = 12,
-    LOOP_IF_BIT_ASSIGN_A_START = 13,
-    LOOP_IF_BIT_ASSIGN_A_WAIT = 14,
-    LOOP_MULT_A_BY_ONE = 15,
-    DONE = 16;
+    LOOP_IF_BIT_A_SETUP = 13,
+    LOOP_IF_BIT_A_START = 14,
+    LOOP_IF_BIT_A_WAIT = 15,
+    LOOP_IF_BIT_A_ASSIGN = 16,
+    MULT_A_BY_ONE_SETUP = 17,
+    MULT_A_BY_ONE_START = 18,
+    MULT_A_BY_ONE_WAIT = 19,
+    MULT_A_BY_ONE_ASSIGN = 20,
+    DONE = 21;
 
 	// Declare state register
 	reg [3:0] state, nextstate;
 
     // Datapath control in signals (Datapath -> FSM)
-    wire mod_done, 
-        mult_done;
+    wire mult_done, cur_bit;
 
     //Datapath control out signals (FSM -> Datapath)
     reg start_mult,
-        start_mod;
+        assign_a_flag,
+        setup_x_tilde_flag,
+        assign_x_tilde_flag,
+        wait_until_bitlen_flag,
+        setup_loop_a_flag,
+        assign_loop_a_flag,
+        setup_if_bit_a_flag,
+        assign_if_bit_a_flag,
+        setup_a_by_one_flag,
+        assign_a_by_one_flag;
 
-    // temporary registers
-    reg [15:0] counter;
-    reg [511:0] mult_in_a, 
-                mult_in_b, 
-                mult_result, 
-                mod_result, 
-                mod_in_a;
+    // Datapath signals
+    reg [15:0] counter;                 // Loop counter
+    reg [511:0] mult_in_a, mult_in_b;   // Mult inputs
+    wire [511:0] mult_result;           // Mult result
+    reg [511:0] var_a, var_x_tilde, var_result;     // Algorithm variables
 
-    
     montgomery mult(
         clk,
         resetn,
@@ -80,16 +92,6 @@ module montgomery_exp(
         in_m,
         mult_result,
         mult_done
-    );
-
-    mod mod1(
-        clk,
-        resetn,
-        start_mod,
-        mod_in_a,
-        in_m,
-        mod_result,
-        mod_done
     );
 
 	// Next state update
@@ -105,103 +107,357 @@ module montgomery_exp(
     always @(*)
     begin
         case(state)
-            START: begin
-                
+            // Get results from A and set up x tilde
+            A_ASSIGN: begin
+                start_mult <= 0;
+                assign_a_flag <= 1;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            // Save result from a and 
+            X_TILDE_SETUP: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 1;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            X_TILDE_START: begin
+                start_mult <= 1;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            X_TILDE_ASSIGN: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 1;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            WAIT_UNTIL_BITLEN: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 1;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_A_SETUP: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 1;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_A_START: begin
+                start_mult <= 1;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_A_ASSIGN: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 1;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_IF_BIT_A_SETUP: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 1;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_IF_BIT_A_START: begin
+                start_mult <= 1;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            LOOP_IF_BIT_A_ASSIGN: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 1;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            MULT_A_BY_ONE_SETUP: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 1;
+                assign_a_by_one_flag <= 0;
+            end
+            MULT_A_BY_ONE_START: begin
+                start_mult <= 1;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
+            end
+            MULT_A_BY_ONE_ASSIGN: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 1;
+            end
+            default: begin
+                start_mult <= 0;
+                assign_a_flag <= 0;
+                setup_x_tilde_flag <= 0;
+                assign_x_tilde_flag <= 0;
+                wait_until_bitlen_flag <= 0;
+                setup_loop_a_flag <= 0;
+                assign_loop_a_flag <= 0;
+                setup_if_bit_a_flag <= 0;
+                assign_if_bit_a_flag <= 0;
+                setup_a_by_one_flag <= 0;
+                assign_a_by_one_flag <= 0;
             end
         endcase
     end
 
 
     // next state logic
-
     always @(*) begin
-      case(state)
-        START: begin
-            if (start)
-                nextstate <= ASSIGN_R;
-            else
-                nextstate <= START;
-        end
-        ASSIGN_R: begin
-            nextstate <= ASSIGN_R2_START;
-        end
-        ASSIGN_R2_START: begin
-            nextstate <= ASSIGN_R2_WAIT;
-        end
-        ASSIGN_R2_WAIT: begin
-            if(!mod_done)
-                nextstate <= ASSIGN_R2_WAIT;
-            else
-                nextstate <= ASSIGN_A_START;
-        end
-        ASSIGN_A_START: begin
-            nextstate <= ASSIGN_A_WAIT;
-        end
-        ASSIGN_A_WAIT: begin
-            if(!mod_done)
-            nextstate <= ASSIGN_A_WAIT;
-            else
-            nextstate <= ASSIGN_X_TILDE_START;
-        end
-        ASSIGN_X_TILDE_START: begin
-            nextstate <= ASSIGN_X_TILDE_WAIT;
-        end
-        ASSIGN_X_TILDE_WAIT: begin
-            if(!mult_done)
-            nextstate <= ASSIGN_X_TILDE_WAIT;
-            else
-            nextstate <= ASSIGN_T;
-        end
-        ASSIGN_T: begin
-            if(cur_bit == 1'b1)
-            nextstate <= LOOP_START;
-            else
-            nextstate <= ASSIGN_T;
-        end
-        LOOP_START: begin
-            nextstate <= LOOP_ASSIGN_A_START;
-        end
-        LOOP_ASSIGN_A_START: begin
-            nextstate <= LOOP_ASSIGN_A_WAIT;
-        end
-        LOOP_ASSIGN_A_WAIT: begin
-            if(!mult_done)
-                nextstate <= LOOP_ASSIGN_A_WAIT;
-            else
-                nextstate <= LOOP_IF_BIT;
-        end
-        LOOP_IF_BIT: begin
-            if(cur_bit == 1'b1)
-                nextstate <= LOOP_IF_BIT_ASSIGN_A_START;
-            else
-                nextstate <= LOOP_MULT_A_BY_ONE;
-        end
-        LOOP_IF_BIT_ASSIGN_A_START: begin
-            nextstate <= LOOP_IF_BIT_ASSIGN_A_WAIT;
-        end
-        LOOP_IF_BIT_ASSIGN_A_WAIT: begin
-            if(!mult_done)
-                nextstate <= LOOP_IF_BIT_ASSIGN_A_WAIT;
-            else
+        case(state)
+            START: begin
+                if (start)
+                    nextstate <= A_ASSIGN;
+                else
+                    nextstate <= START;
+            end
+            // A  = R % M;
+            A_ASSIGN: begin
+                nextstate <= X_TILDE_SETUP;
+            end
+            // X_tilde = MontMul_512(X,R2,M)
+            X_TILDE_SETUP: begin
+                nextstate <= X_TILDE_START;
+            end
+            X_TILDE_START: begin
+                nextstate <= X_TILDE_WAIT;
+            end
+            X_TILDE_WAIT: begin
+                if(!mult_done)
+                    nextstate <= X_TILDE_WAIT;
+                else
+                    nextstate <= X_TILDE_ASSIGN;
+            end
+            X_TILDE_ASSIGN: begin
+                nextstate <= WAIT_UNTIL_BITLEN;
+            end
+            // t = helpers.bitlen(E)
+            WAIT_UNTIL_BITLEN: begin
+                if(!cur_bit)
+                    nextstate <= WAIT_UNTIL_BITLEN;
+                else
+                    nextstate <= LOOP_START;
+            end
+            // for i in range(0,t):
+            LOOP_START: begin
+                if (counter > 0)
+                    nextstate <= LOOP_A_START;
+                else
+                    nextstate <= MULT_A_BY_ONE_START;
+            end
+            // A = MontMul_512(A,A,M)
+            LOOP_A_SETUP: begin
+                nextstate <= LOOP_A_START;
+            end
+            LOOP_A_START: begin
+                nextstate <= LOOP_A_WAIT;
+            end
+            LOOP_A_WAIT: begin
+                if(!mult_done)
+                    nextstate <= LOOP_A_WAIT;
+                else
+                    nextstate <= LOOP_A_ASSIGN;
+            end
+            LOOP_A_ASSIGN: begin
+                nextstate <= WAIT_UNTIL_BITLEN;
+            end
+            // if helpers.bit(E,t-i-1) == 1:
+            LOOP_IF_BIT: begin
+                if (cur_bit)
+                    nextstate <= LOOP_IF_BIT_A_SETUP;
+                else
+                    nextstate <= LOOP_A_START;
+            end
+            // A = MontMul_512(A,X_tilde,M)
+            LOOP_IF_BIT_A_SETUP: begin
+                nextstate <= LOOP_IF_BIT_A_START;
+            end
+            LOOP_IF_BIT_A_START: begin
+                nextstate <= LOOP_IF_BIT_A_WAIT;
+            end
+            LOOP_IF_BIT_A_WAIT: begin
+                if(!mult_done)
+                    nextstate <= LOOP_IF_BIT_A_WAIT;
+                else
+                    nextstate <= LOOP_IF_BIT_A_ASSIGN;
+            end
+            LOOP_IF_BIT_A_ASSIGN: begin
+                nextstate <= LOOP_START;
+            end
+            // A = MontMul_512(A,1,M)
+            MULT_A_BY_ONE_SETUP: begin
+                nextstate <= MULT_A_BY_ONE_START;
+            end
+            MULT_A_BY_ONE_START: begin
+                nextstate <= MULT_A_BY_ONE_WAIT;
+            end
+            MULT_A_BY_ONE_WAIT: begin
+                if(!mult_done)
+                    nextstate <= MULT_A_BY_ONE_WAIT;
+                else
+                    nextstate <= MULT_A_BY_ONE_ASSIGN;
+            end
+            MULT_A_BY_ONE_ASSIGN: begin
                 nextstate <= DONE;
-        end
-        DONE:
-            nextstate <= DONE;
+            end
+            // return A
+            DONE: begin
+                nextstate <= DONE;
+            end
         endcase
     end
 
     // datapath
 	always @(posedge clk)
 	begin
-        if(start) begin
-
+	    if (start) begin
+	        counter <= 32'b11111111111111111111111111111111;
+	    end
+        else if (assign_a_flag) begin
+            var_a <= in_rmodm;
         end
-        else if (mod_done)
-            
-
+        else if (setup_x_tilde_flag) begin
+            mult_in_a <= in_x;
+            mult_in_b <= in_r2modm;
+        end
+        else if (assign_x_tilde_flag) begin
+            var_x_tilde <= mult_result;
+        end
+        else if (wait_until_bitlen_flag) begin
+            counter <= counter - 1;
+        end
+        else if (setup_loop_a_flag) begin
+            mult_in_a <= var_a;
+            mult_in_b <= var_a;
+        end
+        else if (assign_loop_a_flag) begin
+            var_a <= mult_result;
+        end
+        else if (setup_if_bit_a_flag) begin
+            mult_in_a <= var_a;
+            mult_in_b <= var_x_tilde;
+        end
+        else if (assign_if_bit_a_flag) begin
+            var_a <= mult_result;
+        end
+        else if (setup_a_by_one_flag) begin
+            mult_in_a <= var_a;
+            mult_in_b <= 512'b1;
+        end
+        else if (assign_a_by_one_flag) begin
+            var_result <= mult_result;
+        end
     end
 
-assign cur_bit = in_e[counter];
+    assign result = var_result;
+	assign done = (state==DONE) ? 1'b1 : 1'b0;
+    assign cur_bit = in_e[counter];
 
 endmodule
 
