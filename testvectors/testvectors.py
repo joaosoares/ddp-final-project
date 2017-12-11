@@ -70,6 +70,11 @@ if operation == 3:
   A = helpers.getRandomInt(512)
   B = helpers.getRandomInt(512)
   M = helpers.getModulus(512)
+
+  A = 0xa84ff2f71071936d568335f4e31da1c104c831dc18d7b9199f5d96b9df7315bd0fa8db7a6201cf9ae0842c7f6797a025684296de2089f536c18b7a583c7a9fc5  
+  B = 0xb9cf554dbc2f7d876274c0895b10c21a0322d9435a2cd1af43a483a61f7cfb92f984df1a0d9357bc796f8e582427a609d99348f8079de7731fc8a31b3eea6c6e
+  M = 0xef449a8c29c1266af559bdb8d0c42c042b9a46f619b28d7094369f2842ebe42175eb00442338301d1a509aef69043c1dee3bc1f3a06da74e54d094bc7e4ec49b  
+
   C = HW.MontMul_512(A, B, M)
   D = (A*B*helpers.Modinv(2**512,M)) % M
   e = C - D
@@ -88,12 +93,12 @@ if operation == 4:
   print "Test Vector for Montgomery Exponentiation\n"
 
   X = helpers.getRandomInt(512)
-  E = helpers.getRandomInt(508)
+  E = helpers.getRandomInt(8)
   M = helpers.getModulus(512)
 
-  X = 0xb55708a7f2daa5631117b7d03ec4d7992ccad8d7e22d891db1e03e15ad545a33fc9f444b1a16dbae60d527f8f7118db19d65258cb9977527fbfc19786b18ba76
-  E = 0xb1
-  M = 0xd9bf2caaf3992d7e456563271a7c22da97d772cf8fb8a8d34756a335657daf63eff091961c4ea3c56066c5822baa68d108e9b45d95aa98852b71d44daca7419f
+  # X = 0xb55708a7f2daa5631117b7d03ec4d7992ccad8d7e22d891db1e03e15ad545a33fc9f444b1a16dbae60d527f8f7118db19d65258cb9977527fbfc19786b18ba76
+  # E = 0xb1
+  # M = 0xd9bf2caaf3992d7e456563271a7c22da97d772cf8fb8a8d34756a335657daf63eff091961c4ea3c56066c5822baa68d108e9b45d95aa98852b71d44daca7419f
   R  = 2**512
   RmodM = R % M
   R2modM = (R*R) % M
@@ -241,10 +246,10 @@ if operation == 5:
         # If need to debug, by observing the intermediate values,
         # then can be uncommented.
 
-  P_p = HW.MontExp_512(Ct_p, d_p, p)           # 512-bit HW modular exp.
-  P_q = HW.MontExp_512(Ct_q, d_q, q)           # 512-bit HW modular exp.
-  # P_p = helpers.Modexp(Ct_p, d_p, p)            # 512-bit HW modular exp.
-  # P_q = helpers.Modexp(Ct_q, d_q, q)            # 512-bit HW modular exp.
+  # P_p = HW.MontExp_512(Ct_p, d_p, p)           # 512-bit HW modular exp.
+  # P_q = HW.MontExp_512(Ct_q, d_q, q)           # 512-bit HW modular exp.
+  P_p = helpers.Modexp(Ct_p, d_p, p)            # 512-bit HW modular exp.
+  P_q = helpers.Modexp(Ct_q, d_q, q)            # 512-bit HW modular exp.
   
   # Inverse CRT, in Software
   #

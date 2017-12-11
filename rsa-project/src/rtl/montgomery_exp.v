@@ -327,7 +327,7 @@ module montgomery_exp(
     always @(*) begin
         case(state)
             START: begin
-                if (start)
+                if (start == 1'b1)
                     nextstate <= A_ASSIGN;
                 else
                     nextstate <= START;
@@ -434,6 +434,8 @@ module montgomery_exp(
                 else
                     nextstate <= START;
             end
+            default:
+                nextstate <= START;
         endcase
     end
 
