@@ -62,23 +62,30 @@ module montgomery_wrapper
 
     localparam STATE_BITS           = 4;    
     localparam STATE_WAIT_FOR_CMD   = 4'd1;
-    localparam STATE_READ_A1_A2     = 4'd2;
-    localparam STATE_READ_B1_B2     = 4'd3;
+    localparam STATE_READ_X1_X2     = 4'd2;
+    localparam STATE_READ_E1_E2     = 4'd3;
     localparam STATE_READ_M1_M2     = 4'd4;
-    localparam STATE_WRITE_RESULTS  = 4'd5;
-    localparam STATE_WRITE_PORT2    = 4'd6;
-    localparam STATE_MULTIPLY_START = 4'd7;
-    localparam STATE_MULTIPLY_WAIT  = 4'd8;
+    localparam STATE_READ_R2M1_R2M2 = 4'd5;
+    localparam STATE_READ_RM1_RM2   = 4'd6;
+    localparam STATE_WRITE_RESULTS  = 4'd7;
+    localparam STATE_WRITE_PORT2    = 4'd8;
+    localparam STATE_EXP_START      = 4'd9;
+    localparam STATE_EXP_WAIT       = 4'd10;
 
     reg [STATE_BITS-1:0] r_state;
     reg [STATE_BITS-1:0] next_state;
     
-    localparam CMD_READ_A1_A2       = 32'h0;
-    localparam CMD_READ_B1_B2       = 32'h1;
+    localparam CMD_READ_X1_X2       = 32'h0;
+    localparam CMD_READ_E1_E2       = 32'h1;
     localparam CMD_READ_M1_M2       = 32'h2;
-    localparam CMD_MULTIPLY         = 32'h3;    
-    localparam CMD_WRITE            = 32'h4;
+    localparam CMD_READ_R2M1_R2M2   = 32'h3;
+    localparam CMD_READ_RM1_RM2     = 32'h4;
+    localparam CMD_EXP_START        = 32'h5;    
+    localparam CMD_WRITE            = 32'h6;
 
+
+    wire mont1_done;
+    wire mont2_done;
 
 
     ////////////// - State Machine
@@ -95,14 +102,18 @@ module montgomery_wrapper
                         if (port1_valid==1'b1) begin
                             //Decode the command received on Port1
                             case (port1_din)
-                                CMD_READ_A1_A2:
-                                    next_state <= STATE_READ_A1_A2;
-                                CMD_READ_B1_B2:
-                                    next_state <= STATE_READ_B1_B2;
+                                CMD_READ_X1_X2:
+                                    next_state <= STATE_READ_X1_X2;
+                                CMD_READ_E1_E2:
+                                    next_state <= STATE_READ_E1_E2;
                                 CMD_READ_M1_M2:
                                     next_state <= STATE_READ_M1_M2;
-                                CMD_MULTIPLY:                            
-                                    next_state <= STATE_MULTIPLY_START;                                
+                                CMD_READ_R2M1_R2M2:
+                                    next_state <= STATE_READ_R2M1_R2M2;
+                                CMD_READ_RM1_RM2:
+                                    next_state <= STATE_READ_RM1_RM2;
+                                CMD_EXP_START:                            
+                                    next_state <= STATE_EXP_START;                                
                                 CMD_WRITE:
                                     next_state <= STATE_WRITE_RESULTS;
                                 default:
@@ -112,11 +123,11 @@ module montgomery_wrapper
                             next_state <= r_state;
                     end
                 
-                STATE_READ_A1_A2:
+                STATE_READ_X1_X2:
                     //Read the bram_din and store in a1_tmp and a2_temp
                     next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
-                STATE_READ_B1_B2:
+                STATE_READ_E1_E2:
                     //Read the bram_din and store in b1_temp and b2_temp
                     next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
@@ -124,13 +135,21 @@ module montgomery_wrapper
                     //Read the bram_din and store in m1_temp and m2_temp
                     next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
                 
-                STATE_MULTIPLY_START: 
+                STATE_READ_RM1_RM2:
+                    //Read the bram_din and store in m1_temp and m2_temp
+                    next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
+                
+                STATE_READ_R2M1_R2M2:
+                    //Read the bram_din and store in m1_temp and m2_temp
+                    next_state <= (bram_din_valid==1'b1) ? STATE_WRITE_PORT2 : r_state;
+                
+                STATE_EXP_START: 
                     //Perform a computation on r_tmp
-                    next_state <= STATE_MULTIPLY_WAIT;
+                    next_state <= STATE_EXP_WAIT;
 
-                STATE_MULTIPLY_WAIT:
+                STATE_EXP_WAIT:
                     if(!mont1_done || !mont2_done)
-                        next_state <= STATE_MULTIPLY_WAIT;
+                        next_state <= STATE_EXP_WAIT;
                     else
                         next_state <= STATE_WRITE_PORT2 ;
                 
@@ -158,14 +177,20 @@ module montgomery_wrapper
 
     ////////////// - Computation
 
-    reg [511:0] a1_data;
-    reg [511:0] a2_data;
+    reg [511:0] x1_data;
+    reg [511:0] x2_data;
 
-    reg [511:0] b1_data;
-    reg [511:0] b2_data;
+    reg [511:0] e1_data;
+    reg [511:0] e2_data;
 
     reg [511:0] m1_data;
     reg [511:0] m2_data;
+
+    reg [511:0] r2m1_data;
+    reg [511:0] r2m2_data;
+
+    reg [511:0] rm1_data;
+    reg [511:0] rm2_data;
 
     wire [511:0] res1_data;
     wire [511:0] res2_data;
@@ -173,55 +198,64 @@ module montgomery_wrapper
     reg [511:0] core1_data;
     reg [511:0] core2_data;
 
-    wire mont1_done;
-    wire mont2_done;
-
-    reg mult_start;
+    reg exp_start;
 
     always @(posedge(clk))
         if (resetn==1'b0)
         begin
-            a1_data <= 512'b0;
-            a2_data <= 512'b0;
-            b1_data <= 512'b0;
-            b2_data <= 512'b0;
+            x1_data <= 512'b0;
+            x2_data <= 512'b0;
+            e1_data <= 512'b0;
+            e2_data <= 512'b0;
             m1_data <= 512'b0;
             m2_data <= 512'b0;
+            r2m1_data <= 512'b0;
+            r2m2_data <= 512'b0;
+            rm1_data <= 512'b0;
+            rm2_data <= 512'b0;
         end
         else
         begin
             case (r_state)
-                STATE_READ_A1_A2: begin
+                STATE_READ_X1_X2: begin
                     if ((bram_din_valid==1'b1)) begin
-                        a1_data <= bram_din1;
-                        a2_data <= bram_din2;
+                        x1_data <= bram_din1;
+                        x2_data <= bram_din2;
                     end else begin
-                        a1_data <= a1_data; 
-                        a2_data <= a2_data; 
+                        x1_data <= x1_data; 
+                        x2_data <= x2_data; 
                     end
-                    b1_data <= b1_data;
-                    b2_data <= b2_data;
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
                     m1_data <= m1_data;
                     m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
-                    mult_start <= 1'b0;
+                    exp_start <= 1'b0;
                 end
-                STATE_READ_B1_B2: begin
+                STATE_READ_E1_E2: begin
                     if ((bram_din_valid==1'b1)) begin
-                        b1_data <= bram_din1;
-                        b2_data <= bram_din2;
+                        e1_data <= bram_din1;
+                        e2_data <= bram_din2;
                     end else begin
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
+                        e1_data <= e1_data;
+                        e2_data <= e2_data;
                     end
-                    a1_data <= a1_data; 
-                    a2_data <= a2_data; 
+                    x1_data <= x1_data; 
+                    x2_data <= x2_data; 
                     m1_data <= m1_data;
                     m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
-                    mult_start <= 1'b0;
+                    exp_start <= 1'b0;
                     
                 end
                 STATE_READ_M1_M2:begin
@@ -232,73 +266,132 @@ module montgomery_wrapper
                         m1_data <= m1_data;
                         m2_data <= m2_data;
                     end
-                    a1_data <= a1_data;
-                    a2_data <= a2_data;
-                    b1_data <= b1_data;
-                    b2_data <= b2_data;
+                    x1_data <= x1_data;
+                    x2_data <= x2_data;
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
                     core1_data <= core1_data;
                     core2_data <= core2_data;
-                    mult_start <= 1'b0;
+                    exp_start <= 1'b0;
                 end
-                STATE_MULTIPLY_START: begin
-                    core1_data <= res1_data;
-                    core2_data <= res2_data;
-                    a1_data <= a1_data; 
-                    a2_data <= a2_data; 
-                    b1_data <= b1_data;
-                    b2_data <= b2_data;
+                STATE_READ_R2M1_R2M2:begin
+                    if ((bram_din_valid==1'b1)) begin
+                        r2m1_data <= bram_din1;
+                        r2m2_data <= bram_din2;
+                    end else begin
+                        r2m1_data <= r2m1_data;
+                        r2m2_data <= r2m2_data;
+                    end
+                    x1_data <= x1_data;
+                    x2_data <= x2_data;
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
                     m1_data <= m1_data;
                     m2_data <= m2_data;
-                    mult_start <= 1'b1;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                    exp_start <= 1'b0;
+                end
+                STATE_READ_RM1_RM2: begin
+                    if ((bram_din_valid==1'b1)) begin
+                        rm1_data <= bram_din1;
+                        rm2_data <= bram_din2;
+                    end else begin
+                        rm1_data <= rm1_data;
+                        rm2_data <= rm2_data;
+                    end
+                    x1_data <= x1_data;
+                    x2_data <= x2_data;
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                    exp_start <= 1'b0;
+                end
+                STATE_EXP_START: begin
+                    core1_data <= res1_data;
+                    core2_data <= res2_data;
+                    x1_data <= x1_data; 
+                    x2_data <= x2_data; 
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
+                    exp_start <= 1'b1;
                 end
 
                 STATE_WRITE_RESULTS: begin
                     core1_data <= res1_data;
                     core2_data <= res2_data;
-                    a1_data <= a1_data; 
-                    a2_data <= a2_data; 
-                    b1_data <= b1_data;
-                    b2_data <= b2_data;
+                    x1_data <= x1_data; 
+                    x2_data <= x2_data; 
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
                     m1_data <= m1_data;
                     m2_data <= m2_data;
-                    mult_start <= 1'b0;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
+                    exp_start <= 1'b0;
                 end
-                default:
-                    begin
-                        core1_data <= core1_data;
-                        core2_data <= core2_data;
-                        a1_data <= a1_data; 
-                        a2_data <= a2_data; 
-                        b1_data <= b1_data;
-                        b2_data <= b2_data;
-                        m1_data <= m1_data;
-                        m2_data <= m2_data;
-                        mult_start <= 1'b0;
-                    end
+                default: begin
+                    core1_data <= core1_data;
+                    core2_data <= core2_data;
+                    x1_data <= x1_data; 
+                    x2_data <= x2_data; 
+                    e1_data <= e1_data;
+                    e2_data <= e2_data;
+                    m1_data <= m1_data;
+                    m2_data <= m2_data;
+                    r2m1_data <= r2m1_data;
+                    r2m2_data <= r2m2_data;
+                    rm1_data <= rm1_data;
+                    rm2_data <= rm2_data;
+                    exp_start <= 1'b0;
+                end
             endcase;
         end
     
     assign bram_dout1       = core1_data;   
     assign bram_dout2       = core2_data; 
 
-	montgomery mont1(
+	montgomery_exp mont1(
 		clk,
 		resetn,
-		mult_start,
-		a1_data,
-		b1_data,
+		exp_start,
+		x1_data,
+		e1_data,
 		m1_data,
+        rm1_data,
+        r2m1_data,
         res1_data,
 		mont1_done
 	);
 
-	montgomery mont2(
+	montgomery_exp mont2(
 		clk,
 		resetn,
-		mult_start,
-		a2_data,
-		b2_data,
+		exp_start,
+		x2_data,
+		e2_data,
 		m2_data,
+        rm2_data,
+        r2m2_data,
         res2_data,
 		mont2_done
 	);

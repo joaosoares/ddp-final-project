@@ -283,8 +283,12 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 				else
 					nextstate <= DONE;
 			end
-			DONE:
-			nextstate <= DONE;
+			DONE: begin
+				if (!start)
+					nextstate <= DONE;
+				else
+					nextstate <= LOOP_START;
+			end
 			default: nextstate <= START;
 		endcase
 	end
@@ -293,7 +297,7 @@ module montgomery(clk, resetn, start, in_a, in_b, in_m, result, done);
 	always @(posedge clk)
 	begin
 		// C reg modifications
-		if(start_c) begin
+		if(start_c || start) begin
 			c_reg <= {WIDTH{1'd0}};
 			b_reg <= {2'b0, in_b};
 			m_reg <= {2'b0, in_m};

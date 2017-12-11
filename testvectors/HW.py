@@ -28,12 +28,12 @@ def MultiPrecisionAdd(A, B, addsub):
 def MontMul_512(A, B, M):
     # Returns (A*B*Modinv(R,M)) mod M
     C = 0
+    import pdb; pdb.set_trace()
     for i in range(0,512):
         C = MultiPrecisionAdd(C, helpers.bit(A,i)*B, "add")
-        if (C % 2) == 0:
-            C = C / 2;
-        else:
-            C = MultiPrecisionAdd(C, M, "add") / 2;
+        if (C % 2) != 0:
+            C = MultiPrecisionAdd(C, M, "add") / 2
+        C = C / 2
     while C >= M:
         C = MultiPrecisionAdd(C, M, "sub")
     return C
