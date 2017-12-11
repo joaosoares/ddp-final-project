@@ -10,7 +10,7 @@ seed = "random"
 print "TEST VECTOR GENERATOR FOR DDP\n"
 
 if len(sys.argv) == 2 or len(sys.argv) == 3:
-  if str(sys.argv[1]) == "adder":           operation = 1;
+  if str(sys.argv[1])  == "adder":          operation = 1;
   if str(sys.argv[1]) == "subtractor":      operation = 2;
   if str(sys.argv[1]) == "multiplication":  operation = 3;
   if str(sys.argv[1]) == "exponentiation":  operation = 4;
@@ -88,26 +88,30 @@ if operation == 4:
   print "Test Vector for Montgomery Exponentiation\n"
 
   X = helpers.getRandomInt(1024)
-  E = helpers.getRandomInt(8)
+  E = helpers.getRandomInt(16)
   M = helpers.getModulus(1024)
-  M_prime = helpers.Modinv(M, 2**1024)
+  # M_prime = helpers.Modinv(M, 2**1024)
   C = SW.MontExp_1024(X, E, M)
   D = helpers.Modexp(X, E, M)
   e = C - D
 
-  print "X                = ", hex(X)           # 512-bits
-  print "E                = ", hex(E)           # 8-bits
-  print "M                = ", hex(M)           # 512-bits
-  print "M prime          = ", hex(M_prime)           # 512-bits
-  print "(X^E) mod M      = ", hex(C)           # 512-bits
-  print "(X^E) mod M      = ", hex(D)           # 512-bits
-  print "error            = ", hex(e)         
+  print "X = ", hex(X)           # 1024-bits
+  print "E = ", hex(E)           # 16-bits
 
-  helpers.print2array(X, 'x', 32)
-  helpers.print2array(E, 'e', 1)
-  helpers.print2array(M, 'm', 32)
-  helpers.print2array(M_prime, 'm_prime', 32)
-  helpers.print2array(C, 'expected', 32)
+  r = 2**1024
+  N_prime = (r - helpers.Modinv(M, r)) 
+  
+  print "N = ", hex(M) # 1024-bits
+  print "N_prime = ", hex(N_prime) # 1024-bits
+  print "(X^E) mod M = ", hex(C) # 1024-bits
+  print "(X^E) mod M = ", hex(D) # 1024-bits
+  print "error = ", hex(e) 
+
+  # helpers.print2array(X, 'x', 32)
+  # helpers.print2array(E, 'e', 1)
+  # helpers.print2array(M, 'm', 32)
+  # helpers.print2array(M_prime, 'm_prime', 32)
+  # helpers.print2array(C, 'expected', 32)
 
 #####################################################
 
