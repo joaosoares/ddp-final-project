@@ -10,224 +10,216 @@
 #include "interface.h"
 #include "sw.h"
 #include "hw.h"
+#include "mp_arith.h"
+#include "mp_print.h"
 
-// These variables are defined and assigned in testvector.c
+#define SW_SIZE 32
+#define HW_SIZE 16
+
+//These variables are defined and assigned in testvector.c
 extern uint32_t M[32],
-                N[32],       N_prime[32],
-                e[32],
-                e_len,
-                p[16],       q[16],
-                d_p[16],     d_q[16],
-                d_p_len[16], d_q_len[16],
-                x_p[32],     x_q[32],
-                R2p[16],     R2q[16],
-                R_1024[32],  R2_1024[32],
-                One[32];
+               N[32],       N_prime[32],
+               e[32],
+               e_len,
+               p[16],       q[16],
+               d_p[16],     d_q[16],
+               d_p_len[16], d_q_len[16],
+               x_p[32],     x_q[32],
+               R2p[16],     R2q[16],
+               R_1024[32],  R2_1024[32],
+               One[32];
 
+//
+//Note that these tree CMDs are same as
+//they are defined in montgomery_wrapper.v
 
-// Note that these tree CMDs are same as
-// they are defined in montgomery_wrapper.v
-#define CMD_READ_X1_X2     0
-#define CMD_READ_E1_E2     1
-#define CMD_READ_M1_M2     2
-#define CMD_READ_R2M1_R2M2 3
-#define CMD_READ_RM1_RM2   4
-#define CMD_EXPONENTIATE   5
-#define CMD_MULTIPLY       6
-#define CMD_WRITE          7
 
 int main()
 {
-    int i;
+   int i;
 
-    init_platform();
-    init_performance_counters(1);
-    interface_init();
+   init_platform();
+   init_performance_counters(1);
+   interface_init();
 
-    xil_printf("Startup..\n\r");
+   xil_printf("Startup..\n\r");
 
-    START_TIMING
-	  test_dma_transfer();
-    STOP_TIMING
+	START_TIMING
+		test_dma_transfer();
+	STOP_TIMING
 
-    /// ENCRYPTION
-    uint32_t Ct2[32];
-    modexp(M, e, e_len, N, N_prime, R2_1024, R_1024, Ct2);
+//    test_MontMultiply4();
 
-    /// DECRYPTION
-    uint32_t Ct2h[16];
-    for(i = 0; i < 16; i++) Ct2h[i] = Ct2[i+16];
+   /*
+    * ENCRYPTION
+    * Encryption happen in software, simple modular exponentiation
+    */
+   uint32_t Ct2[32];
+   SW_MontExp1024(M, e, e_len, N, N_prime, R2_1024, R_1024, Ct2, SW_SIZE);
 
-    uint32_t Ct2l[16];
-    for(i = 0; i < 16; i++) Ct2h[i] = Ct2[i];
+   xil_printf("Ciphertext = \n\r");
+   mp_print(Ct2, "Ciphertext", SW_SIZE);
 
-    uint32_t tp[16];
-    // Start by writing CMD_READ to port1 (command port)
-    xil_printf("PORT1=%x\n\r",CMD_READ_X1_X2);
-    my_montgomery_port[0] = CMD_READ_A1_A2;
-    // Transfer the src array to BRAM
-    uint32_t transfer[32] = {0};
-    for(i = 0; i < 16; i++) transfer[i] = Ct2h[i];
-    bram_dma_transfer(dma_config,transfer,DMA_TRANSFER_NUMBER_OF_WORDS);
-    port2_wait_for_done();
+   /*
+    * DECRYPTION
+    * Separation into 512-bit blocks, reduction, multiplication and
+    * exponentiation in hardware and finally some multiplication
+    * in software.
+    */
 
+   uint32_t Ct2_gen[32] = {0x7f2241e4, 0x7abec680, 0x5a452922, 0xa314f483, 0x92690358, 0x2298fa2d, 0x74b2dacf, 0xad25875c, 0x740c1919, 0x065f4ea0, 0x1774f7b0, 0xa1f9af1c, 0xa9694765, 0xe7f00d10, 0xab51bca4, 0xdb37db32, 0xc1788d4a, 0xf5744b6e, 0xba898941, 0x0fb40647, 0x5f36f924, 0x80bad618, 0xe1386cd8, 0x6c8d0b4e, 0x0c92de83, 0x69de28d1, 0x0b835978, 0x80464542, 0x690dcb00, 0x88aa1913, 0x51b1fec1, 0xa86e376f};
 
-    //// --- Print BRAM contents
-    // For checking if send is successful
-    print_bram_contents();
+   // Ciphertext divided into two 512-bit blocks
+   uint32_t Ct2h[16];
+   for(i = 0; i < 16; i++){
+       Ct2h[i] = Ct2_gen[i+16];
+       // xil_printf("%08x\n\r", Ct2h[i]);
+   }
 
-    // Start by writing CMD_READ to port1 (command port)
-    xil_printf("PORT1=%x\n\r",CMD_READ_B1_B2);
-    my_montgomery_port[0] = CMD_READ_B1_B2;
+   uint32_t Ct2l[16];
+   for(i = 0; i < 16; i++) {
+       Ct2l[i] = Ct2_gen[i];
+       // xil_printf("%08x\n\r", Ct2l[i]);
+   }
 
-    // Transfer the src array to BRAM
-    bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
+   // xil_printf("Ct2h = ");
+   // mp_print(Ct2h, "Ct2h", 16);
+   // mp_print(Ct2l, "Ct2l", 16);
 
-    // Wait for done of CMD_READ is done
-    // by waiting for port2 (acknowledgement port)
-    port2_wait_for_done();
+   xil_printf("\n\n\r");
+   // Reduction
+   uint32_t tp[16];
+   uint32_t tq[16];
+   HW_MontMult512(Ct2h, R2p, p, tp);
+   HW_MontMult512(Ct2h, R2q, q, tq);
 
+   uint32_t Ct_p[16];
+   uint32_t Ct_q[16];
+   mod_add(tp, Ct2l, p, Ct_p, HW_SIZE);
+   mod_add(tq, Ct2l, q, Ct_q, HW_SIZE);
 
-    //// --- Print BRAM contents
-    // For checking if send is successful
-    print_bram_contents();
+   mp_print(Ct_p, "Ciphertext_p", HW_SIZE);
+   mp_print(Ct_q, "Ciphertext_q", HW_SIZE);
 
-    // Start by writing CMD_READ to port1 (command port)
-    xil_printf("PORT1=%x\n\r",CMD_READ_M1_M2);
-    my_montgomery_port[0] = CMD_READ_M1_M2;
+   // Hardware exponentiation
+   uint32_t P_p[16];
+   uint32_t P_q[16];
+   HW_MontExp512(Ct_p, d_p, p, R2_1024, R_1024, P_p);
+   HW_MontExp512(Ct_q, d_q, q, R2_1024, R_1024, P_q);
 
-    // Transfer the src array to BRAM
-    bram_dma_transfer(dma_config,src,DMA_TRANSFER_NUMBER_OF_WORDS);
+   // Inverse CRT (Software)
 
-    // Wait for done of CMD_READ is done
-    // by waiting for port2 (acknowledgement port)
-    port2_wait_for_done();
+   // Copy P_p over to a bigger array
+   uint32_t P_p_1024[32] = {0};
+   uint32_t P_q_1024[32] = {0};
+   for (i = 0; i < SW_SIZE; i++) P_p_1024[i] = P_p[i];
+   for (i = 0; i < SW_SIZE; i++) P_q_1024[i] = P_q[i];
 
+   // Perform SW multiplications and additions
+   uint32_t tp2[32];
+   uint32_t tq2[32];
+   SW_MontMult1024(P_p_1024, x_p, N, N_prime, tp2, SW_SIZE);
+   SW_MontMult1024(P_q_1024, x_q, N, N_prime, tq2, SW_SIZE);
+   uint32_t s[32];
+   mod_add(tp2, tq2, N, s, SW_SIZE);
+   uint32_t Pt3[32];
+   SW_MontMult1024(s, R2_1024, N, N_prime, Pt3, SW_SIZE);
 
-    //// --- Print BRAM contents
-    // For checking if send is successful
-    print_bram_contents();
-
-
-    //// --- Perform the compute operation
-
-    // Start by writing CMD_COMPUTE to port1 (command port)
-    xil_printf("PORT1=%x\n\r",CMD_MULTIPLY);
-    my_montgomery_port[0] = CMD_MULTIPLY;
-
-    // Wait for done of CMD_COMPUTE is done
-	// by waiting for port2 (acknowledgement port)
-    port2_wait_for_done();
-
-
-    //// --- Perform the read operation
-
-    // Start by writing CMD_WRITE to port1 (command port)
-    xil_printf("PORT1=%x\n\r",CMD_WRITE);
-    my_montgomery_port[0] = CMD_WRITE;
-
-    // Wait for done of CMD_WRITE is done
-    port2_wait_for_done(); //Wait until Port2=1
-
-
-    //// --- Print BRAM contents
-
-    // For receiving the read output of the computation
-    print_bram_contents();
-
-    cleanup_platform();
-
-    return 0;
+   mp_print(Pt3, "Plaintext", SW_SIZE);
 }
-/* AUTOGENERATED FILE. DO NOT EDIT. */
+//
+// /* AUTOGENERATED FILE. DO NOT EDIT. */
+//
+// /*=======Test Runner Used To Run Each Test Below=====*/
+// #define RUN_TEST(TestFunc, TestLineNum) \
+// { \
+//   Unity.CurrentTestName = #TestFunc; \
+//   Unity.CurrentTestLineNumber = TestLineNum; \
+//   Unity.NumberOfTests++; \
+//   if (TEST_PROTECT()) \
+//   { \
+//       setUp(); \
+//       TestFunc(); \
+//   } \
+//   if (TEST_PROTECT()) \
+//   { \
+//     tearDown(); \
+//   } \
+//   UnityConcludeTest(); \
+// }
+//
+// /*=======Automagically Detected Files To Include=====*/
+// #ifdef __WIN32__
+// #define UNITY_INCLUDE_SETUP_STUBS
+// #endif
+// #include "../test/unity.h"
+// #include <setjmp.h>
+// #include <stdio.h>
+// #include "../src/sw.h"
+// #include "../src/testvector.h"
+//
+// /*=======External Functions This Runner Calls=====*/
+// extern void setUp(void);
+// extern void tearDown(void);
+// extern void test_MpAdd(void);
+// extern void test_MpSubTest(void);
+// extern void test_MpSubTestZeros(void);
+// extern void test_Mod(void);
+// extern void test_ModAdd(void);
+// extern void test_ModSub(void);
+// extern void test_MontMultiply1(void);
+// extern void test_MontMultiply2(void);
+// extern void test_MontMultiply3(void);
+// extern void test_MontMultiply4(void);
+// extern void test_AddCarry(void);
+// extern void test_ModExp(void);
+//
+//
+// /*=======Suite Setup=====*/
+// static void suite_setup(void)
+// {
+// #if defined(UNITY_WEAK_ATTRIBUTE) || defined(UNITY_WEAK_PRAGMA)
+//   suiteSetUp();
+// #endif
+// }
+//
+// /*=======Suite Teardown=====*/
+// static int suite_teardown(int num_failures)
+// {
+// #if defined(UNITY_WEAK_ATTRIBUTE) || defined(UNITY_WEAK_PRAGMA)
+//   return suiteTearDown(num_failures);
+// #else
+//   return num_failures;
+// #endif
+// }
+//
+// /*=======Test Reset Option=====*/
+// void resetTest(void);
+// void resetTest(void)
+// {
+//   tearDown();
+//   setUp();
+// }
+//
+//
+// /*=======MAIN=====*/
+// int main(void)
+// {
+//   suite_setup();
+//   UnityBegin("test/sw_test.c");
+////   RUN_TEST(test_MpAdd, 5);
+////   RUN_TEST(test_MpSubTest, 19);
+////   RUN_TEST(test_MpSubTestZeros, 31);
+////   RUN_TEST(test_Mod, 43);
+////   RUN_TEST(test_ModAdd, 53);
+////   RUN_TEST(test_ModSub, 63);
+//   RUN_TEST(test_MontMultiply1, 78);
+//   RUN_TEST(test_MontMultiply2, 91);
+//   RUN_TEST(test_MontMultiply3, 104);
+//   RUN_TEST(test_MontMultiply4, 117);
+////   RUN_TEST(test_AddCarry, 130);
+////   RUN_TEST(test_ModExp, 141);
+//
+//   return suite_teardown(UnityEnd());
+// }
 
-/*=======Test Runner Used To Run Each Test Below=====*/
-#define RUN_TEST(TestFunc, TestLineNum) \
-{ \
-  Unity.CurrentTestName = #TestFunc; \
-  Unity.CurrentTestLineNumber = TestLineNum; \
-  Unity.NumberOfTests++; \
-  if (TEST_PROTECT()) \
-  { \
-      setUp(); \
-      TestFunc(); \
-  } \
-  if (TEST_PROTECT()) \
-  { \
-    tearDown(); \
-  } \
-  UnityConcludeTest(); \
-}
-
-/*=======Automagically Detected Files To Include=====*/
-#ifdef __WIN32__
-#define UNITY_INCLUDE_SETUP_STUBS
-#endif
-#include "../test/unity.h"
-#include <setjmp.h>
-#include <stdio.h>
-#include "../src/sw.h"
-#include "../test/testvector.h"
-
-/*=======External Functions This Runner Calls=====*/
-extern void setUp(void);
-extern void tearDown(void);
-extern void test_MpAdd(void);
-extern void test_MpSubTest(void);
-extern void test_MpSubTestZeros(void);
-extern void test_Mod(void);
-extern void test_ModAdd(void);
-extern void test_ModSub(void);
-extern void test_MontMultiply1(void);
-extern void test_MontMultiply2(void);
-extern void test_MontMultiply3(void);
-extern void test_AddCarry(void);
-extern void test_ModExp(void);
-
-
-/*=======Suite Setup=====*/
-static void suite_setup(void)
-{
-#if defined(UNITY_WEAK_ATTRIBUTE) || defined(UNITY_WEAK_PRAGMA)
-  suiteSetUp();
-#endif
-}
-
-/*=======Suite Teardown=====*/
-static int suite_teardown(int num_failures)
-{
-#if defined(UNITY_WEAK_ATTRIBUTE) || defined(UNITY_WEAK_PRAGMA)
-  return suiteTearDown(num_failures);
-#else
-  return num_failures;
-#endif
-}
-
-/*=======Test Reset Option=====*/
-void resetTest(void);
-void resetTest(void)
-{
-  tearDown();
-  setUp();
-}
-
-
-/*=======MAIN=====*/
-int main(void)
-{
-  suite_setup();
-  UnityBegin("test/sw_test.c");
-  RUN_TEST(test_MpAdd, 19);
-  RUN_TEST(test_MpSubTest, 33);
-  RUN_TEST(test_MpSubTestZeros, 45);
-  RUN_TEST(test_Mod, 57);
-  RUN_TEST(test_ModAdd, 67);
-  RUN_TEST(test_ModSub, 77);
-  RUN_TEST(test_MontMultiply1, 92);
-  RUN_TEST(test_MontMultiply2, 105);
-  RUN_TEST(test_MontMultiply3, 118);
-  RUN_TEST(test_AddCarry, 131);
-  RUN_TEST(test_ModExp, 142);
-
-  return suite_teardown(UnityEnd());
-}

@@ -73,3 +73,22 @@ def MontExp_1024(X, E, M):
             A = MontMul_1024(A,X_tilde,M)
     A = MontMul_1024(A,1,M)
     return A
+
+
+
+def MontExp_1024_print(X, E, M):
+    # Returns (X^E) mod M
+    R  = 2**1024
+    R2 = (R*R) % M;
+    A  = R % M;
+    X_tilde = MontMul_1024(X,R2,M)
+    t = helpers.bitlen(E)
+    for i in range(0,15):
+        print "-- Iteration ", str(i)
+        A = MontMul_1024(A,A,M)
+        print "\n@ A* A -- ", str(i), " : ", hex(A)
+        if helpers.bit(E,t-i-1) == 1:
+            A = MontMul_1024(A,X_tilde,M)
+            print "\n@ xtilde * A  -- ", str(i), " : ", hex(A)
+    A = MontMul_1024(A,1,M)
+    return A

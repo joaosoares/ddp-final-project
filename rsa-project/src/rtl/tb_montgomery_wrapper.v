@@ -1,7 +1,7 @@
 `timescale 1ns / 1ps
 
 
-`define NUM_OF_CORES 2
+`define NUM_OF_CORES 1
 
 
 `define RESET_TIME 25
@@ -182,7 +182,7 @@ module tb_montgomery_wrapper#
         
         $display("\n\nSIMULATING with NUM_OF_CORES=%x",`NUM_OF_CORES);
 
-        // Perform CMD_READ_X1_X2
+        // Perform CMD_READ_1ST_OPERAND
         task_port1_write(32'h0); 
         // Put the values to bram to be read.
         task_bram_write(in_X1, in_X1);
@@ -190,7 +190,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_E1_E2
+        // Perform CMD_READ_2ND_OPERAND
         task_port1_write(32'h1); 
         // Put the values to bram to be read.
         task_bram_write(in_E1, in_E1);
@@ -198,7 +198,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_M1_M2
+        // Perform CMD_READ_3RD_OPERAND
         task_port1_write(32'h2); 
         // Put the values to bram to be read.
         task_bram_write(in_M1, in_M1);
@@ -206,7 +206,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_R2M1_R2M2
+        // Perform CMD_READ_4TH_OPERAND
         task_port1_write(32'h3); 
         // Put the values to bram to be read.
         task_bram_write(in_R2M1, in_R2M1);
@@ -214,7 +214,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_R2M1_R2M2
+        // Perform CMD_READ_5TH_OPERAND
         task_port1_write(32'h4); 
         // Put the values to bram to be read.
         task_bram_write(in_RM1, in_RM1);
@@ -222,14 +222,14 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
         
-        // Perform CMD_EXP
-        task_port1_write(32'h5); 
+        // Perform CMD_START_EXP
+        task_port1_write(32'h7); 
         // Wait for completion of the compute operation
         // by waiting for port2_valid to go high.
         task_port2_read(); 
         
-        // Perform CMD_WRITE
-        task_port1_write(32'h7);
+        // Perform CMD_WRITE_EXP
+        task_port1_write(32'h8);
         // Wait for completion of the write operation
         // by waiting for port2_valid to go high.
         task_port2_read(); 
@@ -240,7 +240,7 @@ module tb_montgomery_wrapper#
         $display("\n\n");
         ///////////////////// END EXAMPLE  /////////////////////  
         
-        // Perform CMD_READ_X1_X2
+        // Perform CMD_READ_1ST_OPERAND
         task_port1_write(32'h0); 
         // Put the values to bram to be read.
         task_bram_write(in_A2, in_A2);
@@ -248,7 +248,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_E1_E2
+        // Perform CMD_READ_2ND_OPERAND
         task_port1_write(32'h1); 
         // Put the values to bram to be read.
         task_bram_write(in_B2, in_B2);
@@ -256,7 +256,7 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_READ_M1_M2
+        // Perform CMD_READ_3RD_OPERAND
         task_port1_write(32'h2); 
         // Put the values to bram to be read.
         task_bram_write(in_M2, in_M2);
@@ -264,14 +264,14 @@ module tb_montgomery_wrapper#
         // by waiting for port2_valid to go high.
         task_port2_read(); 
 
-        // Perform CMD_MULTIPLY
-        task_port1_write(32'h6); 
+        // Perform CMD_START_MULT
+        task_port1_write(32'h5); 
         // Wait for completion of the compute operation
         // by waiting for port2_valid to go high.
         task_port2_read(); 
         
-        // Perform CMD_WRITE
-        task_port1_write(32'h7);
+        // Perform CMD_WRITE_EXP
+        task_port1_write(32'h6);
         // Wait for completion of the write operation
         // by waiting for port2_valid to go high.
         task_port2_read(); 

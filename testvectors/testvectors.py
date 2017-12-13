@@ -69,11 +69,11 @@ if operation == 3:
 
   A = helpers.getRandomInt(512)
   B = helpers.getRandomInt(512)
-  M = helpers.getModulus(512)
+  N = helpers.getModulus(512)
 
-  A = 0xa84ff2f71071936d568335f4e31da1c104c831dc18d7b9199f5d96b9df7315bd0fa8db7a6201cf9ae0842c7f6797a025684296de2089f536c18b7a583c7a9fc5  
-  B = 0xb9cf554dbc2f7d876274c0895b10c21a0322d9435a2cd1af43a483a61f7cfb92f984df1a0d9357bc796f8e582427a609d99348f8079de7731fc8a31b3eea6c6e
-  M = 0xef449a8c29c1266af559bdb8d0c42c042b9a46f619b28d7094369f2842ebe42175eb00442338301d1a509aef69043c1dee3bc1f3a06da74e54d094bc7e4ec49b  
+  # A = 0xa84ff2f71071936d568335f4e31da1c104c831dc18d7b9199f5d96b9df7315bd0fa8db7a6201cf9ae0842c7f6797a025684296de2089f536c18b7a583c7a9fc5  
+  # B = 0xb9cf554dbc2f7d876274c0895b10c21a0322d9435a2cd1af43a483a61f7cfb92f984df1a0d9357bc796f8e582427a609d99348f8079de7731fc8a31b3eea6c6e
+  # M = 0xef449a8c29c1266af559bdb8d0c42c042b9a46f619b28d7094369f2842ebe42175eb00442338301d1a509aef69043c1dee3bc1f3a06da74e54d094bc7e4ec49b  
 
   C = HW.MontMul_512(A, B, M)
   D = (A*B*helpers.Modinv(2**512,M)) % M
@@ -85,7 +85,14 @@ if operation == 3:
   print "(A*B*R^-1) mod M = ", hex(C)         # 512-bits
   print "(A*B*R^-1) mod M = ", hex(D)         # 512-bits
   print "error            = ", hex(e)         
-  
+
+  helpers.print2array(A, 'a', 32)
+  helpers.print2array(B, 'b', 1)
+  helpers.print2array(N, 'n', 32)
+  helpers.print2array(N_prime, 'n_prime', 32)
+  helpers.print2array((r*r) % N, 'r2m', 32)
+  helpers.print2array(r % N, 'rm', 32)
+  helpers.print2array(C, 'expected', 32)  
 #####################################################
 
 if operation == 4:
@@ -213,6 +220,7 @@ if operation == 5:
   # Exponentiation, in Software
   Ct2 = SW.MontExp_1024(M, e, N)                # 1024-bit SW montgomery exp. 
   
+  import pdb; pdb.set_trace()
   print "Ciphertext   = ", hex(Ct2)             # 1024-bits
 
   #### Decrypt
@@ -243,8 +251,16 @@ if operation == 5:
   Ct2h = Ct2 >> 512;                            # 512-bits
   Ct2l = Ct2 % (2**512);                        # 512-bits
 
+  print "Ct2h = ", hex(Ct2h)            # 512-bits
+  print "Ct2l = ", hex(Ct2l)            # 512-bits
+
+
   tp   = HW.MontMul_512(Ct2h, R2p, p)           # 512-bits HW montgomery mult.
   tq   = HW.MontMul_512(Ct2h, R2q, q)           # 512-bits HW montgomery mult.
+
+  print "tp = ", hex(tp)            # 512-bits
+  print "tq = ", hex(tq)            # 512-bits
+
 
   Ct_p = (tp + Ct2l) % p                        # 512-bits HW/SW modular add.
   Ct_q = (tq + Ct2l) % q                        # 512-bits HW/SW modular add.

@@ -1,0 +1,1 @@
+source ~micasusr/design/scripts/xilinx_vivado_2016.2.rc

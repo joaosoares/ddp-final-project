@@ -1,7 +1,7 @@
 #ifndef _INTERFACE_H_
 #define _INTERFACE_H_
 
-#define NUMBER_OF_CORES 2
+#define NUMBER_OF_CORES 1
 
 //Divide by four to get the 32-bit offsets
 #define MM2S_DMACR_OFFSET   (0/4)

@@ -4,7 +4,7 @@
 <stringAttribute key="com.xilinx.sdk.gdb.launch.DataFiles" value=""/>
 <stringAttribute key="com.xilinx.sdk.gdb.launch.DebugType" value="STANDALONE_DEBUG"/>
 <booleanAttribute key="com.xilinx.sdk.gdb.launch.ElfNoDownload" value="false"/>
-<stringAttribute key="com.xilinx.sdk.gdb.launch.HwPlatformName" value="rsa_project_wrapper_hw_platform_0"/>
+<stringAttribute key="com.xilinx.sdk.gdb.launch.HwPlatformName" value="rsa_project_wrapper_hw_platform_2"/>
 <stringAttribute key="com.xilinx.sdk.gdb.launch.InitTclFile" value="ps7_init.tcl"/>
 <stringAttribute key="com.xilinx.sdk.gdb.launch.ProcessorName" value="ps7_cortexa9_0"/>
 <booleanAttribute key="com.xilinx.sdk.gdb.launch.ProgramFpga" value="true"/>
@@ -14,7 +14,7 @@
 <stringAttribute key="com.xilinx.sdk.gdb.launch.TargetDevice" value="Auto Detect"/>
 <stringAttribute key="com.xilinx.sdk.gdb.launch.TargetPeer" value="Local"/>
 <stringAttribute key="org.eclipse.cdt.debug.mi.core.HOST" value="localhost"/>
-<stringAttribute key="org.eclipse.cdt.debug.mi.core.PORT" value="1234"/>
+<stringAttribute key="org.eclipse.cdt.debug.mi.core.PORT" value="1241"/>
 <booleanAttribute key="org.eclipse.cdt.debug.mi.core.REMOTE_TCP" value="true"/>
 <booleanAttribute key="org.eclipse.cdt.debug.mi.core.verboseMode" value="false"/>
 <stringAttribute key="org.eclipse.cdt.launch.COREFILE_PATH" value=""/>
